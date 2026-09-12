@@ -24,6 +24,8 @@ export interface Profile {
   heroLine: string;
   /** Shown next to the location in the hero. */
   availability: string;
+  /** Opening line of the contact section. */
+  lookingFor: string;
   links: ProfileLink[];
   resumeUrl: string;
   /** This site's own source repository. */

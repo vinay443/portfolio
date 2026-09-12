@@ -11,7 +11,9 @@ export const profile: Profile = {
     "U.S.-educated Computer Science graduate and AI Engineer with hands-on experience developing enterprise AI platforms for the banking sector. Proficient in Python, LLMs, RAG, vector embeddings, Docker, and enterprise integrations, with a strong background in AI application development, semantic search optimization, and production-ready software engineering.",
   heroLine:
     "Builds AI systems for banks: retrieval-augmented generation, semantic search, and the FastAPI services that run them in production.",
-  availability: "TODO: confirm availability line (open to roles, not looking, etc.)",
+  availability: "Open to remote roles with US companies",
+  lookingFor:
+    "Looking for remote AI Engineer roles with US companies. The work I want involves LLM systems, retrieval, and the backend services around them.",
   links: [
     {
       label: "Email",

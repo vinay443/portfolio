@@ -21,6 +21,8 @@ export interface SearchContextValue {
   /** Instant, reflects the input. */
   query: string;
   setQuery: (next: string) => void;
+  /** The debounced query. Everything that ranks content reads this, not `query`. */
+  appliedQuery: string;
   /** Derived from the debounced query, so it stays in step with `resultCount`. */
   tokens: string[];
   isSearching: boolean;
@@ -31,6 +33,7 @@ export interface SearchContextValue {
 const FALLBACK: SearchContextValue = {
   query: "",
   setQuery: () => {},
+  appliedQuery: "",
   tokens: [],
   isSearching: false,
   resultCount: 0,
@@ -120,8 +123,8 @@ export function SearchProvider({ children }: { children: ReactNode }) {
   const clear = useCallback(() => setQuery(""), []);
 
   const value = useMemo<SearchContextValue>(
-    () => ({ query, setQuery, tokens, isSearching, resultCount, clear }),
-    [query, tokens, isSearching, resultCount, clear],
+    () => ({ query, setQuery, appliedQuery, tokens, isSearching, resultCount, clear }),
+    [query, appliedQuery, tokens, isSearching, resultCount, clear],
   );
 
   return (
