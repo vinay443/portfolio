@@ -36,7 +36,7 @@ function ProjectRow({ project }: { project: ProjectItem }) {
 }
 
 export function Projects() {
-  // Featured first sets the default order; rank() keeps it for an empty query and
+  // Featured first sets the default order; ranking keeps it for an empty query and
   // uses it to break score ties.
   const items = useMemo(
     () =>

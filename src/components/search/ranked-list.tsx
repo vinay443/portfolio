@@ -3,7 +3,8 @@
 import { useMemo, type ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useSearch } from "./search-provider";
-import { rank, type Rankable } from "@/lib/search";
+import { type Rankable } from "@/lib/search";
+import { hybridRank } from "@/lib/hybrid";
 import { EmptyState } from "@/components/ui/empty-state";
 import { cn } from "@/lib/cn";
 
@@ -23,10 +24,13 @@ export function RankedList<T extends Rankable & { id: string }>({
   label: string;
   className?: string;
 }) {
-  const { appliedQuery } = useSearch();
+  const { appliedQuery, queryVector } = useSearch();
   const reduceMotion = useReducedMotion();
 
-  const ranked = useMemo(() => rank(items, appliedQuery), [items, appliedQuery]);
+  const ranked = useMemo(
+    () => hybridRank(items, appliedQuery, queryVector),
+    [items, appliedQuery, queryVector],
+  );
 
   if (ranked.length === 0) {
     return (

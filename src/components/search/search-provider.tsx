@@ -13,7 +13,9 @@ import {
 } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { allContent } from "@/content";
-import { rank, tokenize } from "@/lib/search";
+import { tokenize } from "@/lib/search";
+import { hybridRank } from "@/lib/hybrid";
+import { embedQuery, loadSemantic, type SemanticStatus } from "@/lib/semantic";
 
 const DEBOUNCE_MS = 120;
 
@@ -28,6 +30,11 @@ export interface SearchContextValue {
   isSearching: boolean;
   resultCount: number;
   clear: () => void;
+  semanticStatus: SemanticStatus;
+  /** Starts the one-time model download. Safe to call repeatedly. */
+  activateSemantic: () => void;
+  /** Null until the model is ready and the current query has been embedded. */
+  queryVector: number[] | null;
 }
 
 const FALLBACK: SearchContextValue = {
@@ -38,6 +45,9 @@ const FALLBACK: SearchContextValue = {
   isSearching: false,
   resultCount: 0,
   clear: () => {},
+  semanticStatus: "idle",
+  activateSemantic: () => {},
+  queryVector: null,
 };
 
 const SearchContext = createContext<SearchContextValue | null>(null);
@@ -103,11 +113,24 @@ function SearchParamsBridge({
 export function SearchProvider({ children }: { children: ReactNode }) {
   const [query, setQuery] = useState("");
   const [appliedQuery, setAppliedQuery] = useState("");
+  const [semanticStatus, setSemanticStatus] = useState<SemanticStatus>("idle");
+  const [queryVector, setQueryVector] = useState<number[] | null>(null);
+  const semanticRequested = useRef(false);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setAppliedQuery(query), DEBOUNCE_MS);
     return () => window.clearTimeout(timer);
   }, [query]);
+
+  const activateSemantic = useCallback(() => {
+    if (semanticRequested.current) return;
+    semanticRequested.current = true;
+    setSemanticStatus("loading");
+
+    loadSemantic()
+      .then((ready) => setSemanticStatus(ready ? "ready" : "failed"))
+      .catch(() => setSemanticStatus("failed"));
+  }, []);
 
   const tokens = useMemo(() => tokenize(appliedQuery), [appliedQuery]);
 
@@ -115,16 +138,53 @@ export function SearchProvider({ children }: { children: ReactNode }) {
   // search at all rather than as a search that matches everything.
   const isSearching = tokens.length > 0;
 
+  useEffect(() => {
+    if (semanticStatus !== "ready" || !isSearching) {
+      setQueryVector(null);
+      return;
+    }
+
+    let cancelled = false;
+    embedQuery(appliedQuery).then((vector) => {
+      if (!cancelled) setQueryVector(vector);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [appliedQuery, isSearching, semanticStatus]);
+
   const resultCount = useMemo(
-    () => (isSearching ? rank(allContent, appliedQuery).length : 0),
-    [isSearching, appliedQuery],
+    () => (isSearching ? hybridRank(allContent, appliedQuery, queryVector).length : 0),
+    [isSearching, appliedQuery, queryVector],
   );
 
   const clear = useCallback(() => setQuery(""), []);
 
   const value = useMemo<SearchContextValue>(
-    () => ({ query, setQuery, appliedQuery, tokens, isSearching, resultCount, clear }),
-    [query, appliedQuery, tokens, isSearching, resultCount, clear],
+    () => ({
+      query,
+      setQuery,
+      appliedQuery,
+      tokens,
+      isSearching,
+      resultCount,
+      clear,
+      semanticStatus,
+      activateSemantic,
+      queryVector,
+    }),
+    [
+      query,
+      appliedQuery,
+      tokens,
+      isSearching,
+      resultCount,
+      clear,
+      semanticStatus,
+      activateSemantic,
+      queryVector,
+    ],
   );
 
   return (

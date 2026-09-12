@@ -14,7 +14,8 @@ const RULE_DURATION = 0.48;
 const PLACEHOLDER_INTERVAL_MS = 3200;
 
 export function Hero() {
-  const { query, setQuery, isSearching, resultCount, clear } = useSearch();
+  const { query, setQuery, isSearching, resultCount, clear, semanticStatus, activateSemantic } =
+    useSearch();
   const reduceMotion = useReducedMotion();
   const inputRef = useRef<HTMLInputElement>(null);
   const [focused, setFocused] = useState(false);
@@ -65,6 +66,15 @@ export function Hero() {
   const example = searchExamples[exampleIndex] ?? searchExamples[0] ?? "";
   const availability = isPlaceholder(profile.availability) ? null : profile.availability;
   const metaLine = availability ? `${profile.location} · ${availability}` : profile.location;
+  // Nothing is shown for "idle" or "failed": a visitor who never gets the model
+  // simply has lexical search, and does not need telling.
+  const semanticLabel =
+    semanticStatus === "loading"
+      ? "semantic search loading"
+      : semanticStatus === "ready"
+        ? "semantic"
+        : "";
+
   const countLabel = !isSearching
     ? ""
     : resultCount === 0
@@ -109,7 +119,10 @@ export function Hero() {
               setQuery(event.target.value);
               if (event.target.value.length > 0) setHasTyped(true);
             }}
-            onFocus={() => setFocused(true)}
+            onFocus={() => {
+              setFocused(true);
+              activateSemantic();
+            }}
             onBlur={() => setFocused(false)}
             onKeyDown={(event) => {
               if (event.key !== "Escape") return;
@@ -182,6 +195,10 @@ export function Hero() {
           {countLabel}
         </p>
       </div>
+
+      {semanticLabel ? (
+        <p className="text-step-neg1 text-ink-3 mt-3 font-mono">{semanticLabel}</p>
+      ) : null}
     </section>
   );
 }

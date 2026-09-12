@@ -1,18 +1,24 @@
 "use client";
 
 import { education, experience, projects, skills } from "@/content";
-import { rank, scoreItem } from "@/lib/search";
+import { scoreItem } from "@/lib/search";
+import { hybridRank } from "@/lib/hybrid";
 import { useSearch } from "./search-provider";
 
 function plural(count: number, singular: string, pluralForm: string): string {
   return `${count} ${count === 1 ? singular : pluralForm}`;
 }
 
-function summarise(appliedQuery: string, tokens: string[]): string {
-  const roles = rank(experience, appliedQuery).length;
-  const matchedProjects = rank(
+function summarise(
+  appliedQuery: string,
+  tokens: string[],
+  queryVector: number[] | null,
+): string {
+  const roles = hybridRank(experience, appliedQuery, queryVector).length;
+  const matchedProjects = hybridRank(
     projects.filter((project) => !project.sensitive),
     appliedQuery,
+    queryVector,
   ).length;
   const matchedSkills = skills.reduce(
     (total, group) =>
@@ -36,14 +42,14 @@ function summarise(appliedQuery: string, tokens: string[]): string {
 }
 
 export function ResultSummary() {
-  const { appliedQuery, tokens, isSearching } = useSearch();
+  const { appliedQuery, tokens, isSearching, queryVector } = useSearch();
 
   // The live region itself is always present, even when empty. A region that only
   // appears alongside its text is inconsistently announced.
   return (
     <div aria-live="polite" className="px-6 md:px-12 lg:px-20">
       {isSearching ? (
-        <p className="text-step-neg1 text-ink-2 pb-10">{summarise(appliedQuery, tokens)}</p>
+        <p className="text-step-neg1 text-ink-2 pb-10">{summarise(appliedQuery, tokens, queryVector)}</p>
       ) : null}
     </div>
   );

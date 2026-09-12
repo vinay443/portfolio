@@ -19,6 +19,13 @@ const STOPWORDS = new Set([
   "at",
 ]);
 
+/**
+ * The most a single token can contribute: 3 (headline) + 2 (label) + 1
+ * (substring) + 0.5 (prefix). Hybrid ranking divides by it to put the lexical
+ * score on the same 0-1 scale as cosine similarity.
+ */
+export const MAX_TOKEN_SCORE = 6.5;
+
 /** Anything the ranker can score. Matches the content items structurally. */
 export interface Rankable {
   searchText: string;
