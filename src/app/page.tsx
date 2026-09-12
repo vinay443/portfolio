@@ -18,15 +18,18 @@ export default function Home() {
   return (
     <>
       <SiteHeader />
-      <Hero />
-      <ResultSummary />
 
-      <div className="px-6 md:px-12 lg:px-20">
-        <Experience />
-        <Projects />
-        <Background />
-        <Contact />
-      </div>
+      <main id="content" tabIndex={-1} className="flex-1 outline-none">
+        <Hero />
+        <ResultSummary />
+
+        <div className="px-6 md:px-12 lg:px-20">
+          <Experience />
+          <Projects />
+          <Background />
+          <Contact />
+        </div>
+      </main>
 
       <SiteFooter />
     </>

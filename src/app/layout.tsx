@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import { ThemeProvider } from "next-themes";
-import { profile, skills } from "@/content";
+import { degree, profile, skills } from "@/content";
 import { SearchProvider } from "@/components/search/search-provider";
+import { isPlaceholder } from "@/lib/format";
+import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 const plexSans = IBM_Plex_Sans({
@@ -22,8 +24,7 @@ const plexMono = IBM_Plex_Mono({
 const title = `${profile.name} — ${profile.role}`;
 
 export const metadata: Metadata = {
-  // TODO: replace with the real domain once the site is deployed.
-  metadataBase: new URL("https://TODO-your-domain.com"),
+  metadataBase: new URL(SITE_URL),
   title: {
     default: title,
     template: `%s — ${profile.name}`,
@@ -47,6 +48,27 @@ export const metadata: Metadata = {
   },
 };
 
+const profiles = profile.links
+  .map((link) => link.href)
+  .filter((href) => !isPlaceholder(href) && href.startsWith("http"));
+
+const personJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Person",
+  name: profile.name,
+  jobTitle: profile.role,
+  url: SITE_URL,
+  email: `mailto:${profile.email}`,
+  address: { "@type": "PostalAddress", addressLocality: profile.location },
+  alumniOf: { "@type": "CollegeOrUniversity", name: degree.institution },
+  knowsAbout: skills.flatMap((group) => group.skills).slice(0, 24),
+  ...(profiles.length > 0 ? { sameAs: profiles } : {}),
+};
+
+// Escaping `<` is what stops a future content string containing "</script>" from
+// closing this tag early.
+const personJsonLdHtml = JSON.stringify(personJsonLd).replace(/</g, "\\u003c");
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
@@ -55,6 +77,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${plexSans.variable} ${plexMono.variable} h-full antialiased`}
     >
       <body className="bg-bg text-ink flex min-h-full flex-col">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: personJsonLdHtml }}
+        />
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -68,9 +94,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             >
               Skip to content
             </a>
-            <main id="content" tabIndex={-1} className="flex-1 outline-none">
-              {children}
-            </main>
+            {children}
           </SearchProvider>
         </ThemeProvider>
       </body>

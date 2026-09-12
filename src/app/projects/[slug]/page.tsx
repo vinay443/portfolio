@@ -76,66 +76,68 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
 
   return (
     <>
-      <article className="px-6 pt-16 pb-20 md:px-12 lg:px-20">
-        <Link href="/#projects" className="text-step-neg1 text-ink-2 hover:text-accent">
-          Back to projects
-        </Link>
+      <main id="content" tabIndex={-1} className="flex-1 outline-none">
+        <article className="px-6 pt-16 pb-20 md:px-12 lg:px-20">
+          <Link href="/#projects" className="text-step-neg1 text-ink-2 hover:text-accent">
+            Back to projects
+          </Link>
 
-        <h1 className="text-step-5 mt-10 leading-[1.08] font-semibold tracking-[-0.028em]">
-          {project.title}
-        </h1>
+          <h1 className="text-step-5 mt-10 leading-[1.08] font-semibold tracking-[-0.028em]">
+            {project.title}
+          </h1>
 
-        <p className="text-step-2 text-ink-2 mt-5 max-w-[52ch]">{project.oneLiner}</p>
+          <p className="text-step-2 text-ink-2 mt-5 max-w-[52ch]">{project.oneLiner}</p>
 
-        <dl className="text-step-neg1 border-rule mt-10 grid gap-x-8 gap-y-2 border-t pt-6 font-mono sm:grid-cols-[8rem_1fr]">
-          {facts.map((fact) => (
-            <Fragment key={fact.label}>
-              <dt className="text-ink-3">{fact.label}</dt>
-              <dd className="text-ink-2">{fact.value}</dd>
-            </Fragment>
-          ))}
-        </dl>
-
-        <div className="max-w-measure mt-12 flex flex-col gap-5">
-          {project.longDescription.map((paragraph) => (
-            <p key={paragraph} className="text-step-0 leading-[1.6]">
-              {paragraph}
-            </p>
-          ))}
-        </div>
-
-        <section className="mt-12">
-          <h2 className="text-step-1 font-medium">Highlights</h2>
-          <RuleList className="mt-5">
-            {project.highlights.map((entry) => (
-              <RuleListItem key={entry} tone={ADVERSARIAL.test(entry) ? "flag" : "rule"}>
-                {entry}
-              </RuleListItem>
+          <dl className="text-step-neg1 border-rule mt-10 grid gap-x-8 gap-y-2 border-t pt-6 font-mono sm:grid-cols-[8rem_1fr]">
+            {facts.map((fact) => (
+              <Fragment key={fact.label}>
+                <dt className="text-ink-3">{fact.label}</dt>
+                <dd className="text-ink-2">{fact.value}</dd>
+              </Fragment>
             ))}
-          </RuleList>
-        </section>
+          </dl>
 
-        <section className="mt-12">
-          <h2 className="text-step-1 font-medium">Stack</h2>
-          <div className="mt-4">
-            <StackList stack={project.stack} />
+          <div className="max-w-measure mt-12 flex flex-col gap-5">
+            {project.longDescription.map((paragraph) => (
+              <p key={paragraph} className="text-step-0 leading-[1.6]">
+                {paragraph}
+              </p>
+            ))}
           </div>
-        </section>
 
-        {project.metrics ? (
           <section className="mt-12">
-            <h2 className="text-step-1 font-medium">Measured</h2>
-            <dl className="mt-4 flex flex-wrap gap-x-12 gap-y-4">
-              {project.metrics.map((metric) => (
-                <div key={metric.label}>
-                  <dt className="text-step-neg1 text-ink-3">{metric.label}</dt>
-                  <dd className="text-step-1 text-accent font-medium">{metric.value}</dd>
-                </div>
+            <h2 className="text-step-1 font-medium">Highlights</h2>
+            <RuleList className="mt-5">
+              {project.highlights.map((entry) => (
+                <RuleListItem key={entry} tone={ADVERSARIAL.test(entry) ? "flag" : "rule"}>
+                  {entry}
+                </RuleListItem>
               ))}
-            </dl>
+            </RuleList>
           </section>
-        ) : null}
-      </article>
+
+          <section className="mt-12">
+            <h2 className="text-step-1 font-medium">Stack</h2>
+            <div className="mt-4">
+              <StackList stack={project.stack} />
+            </div>
+          </section>
+
+          {project.metrics ? (
+            <section className="mt-12">
+              <h2 className="text-step-1 font-medium">Measured</h2>
+              <dl className="mt-4 flex flex-wrap gap-x-12 gap-y-4">
+                {project.metrics.map((metric) => (
+                  <div key={metric.label}>
+                    <dt className="text-step-neg1 text-ink-3">{metric.label}</dt>
+                    <dd className="text-step-1 text-accent font-medium">{metric.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+          ) : null}
+        </article>
+      </main>
 
       <SiteFooter />
     </>
