@@ -20,8 +20,14 @@ export interface Profile {
   location: string;
   email: string;
   summary: string;
+  /** One sentence for the hero, condensed from `summary`. */
+  heroLine: string;
+  /** Shown next to the location in the hero. */
+  availability: string;
   links: ProfileLink[];
   resumeUrl: string;
+  /** This site's own source repository. */
+  repoUrl: string;
 }
 
 export interface ExperienceItem extends ContentItem {

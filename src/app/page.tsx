@@ -1,13 +1,25 @@
+import type { Metadata } from "next";
 import { profile } from "@/content";
+import { SiteHeader } from "@/components/chrome/site-header";
+import { SiteFooter } from "@/components/chrome/site-footer";
+import { Hero } from "@/components/sections/hero";
+
+export const metadata: Metadata = {
+  title: { absolute: `${profile.name} — ${profile.role}` },
+  description: profile.heroLine,
+};
 
 export default function Home() {
   return (
-    <main className="mx-auto w-full max-w-measure px-6 py-section">
-      <h1 className="text-step-4 font-semibold">{profile.name}</h1>
-      <p className="text-ink-2 text-step-1 mt-2">{profile.role}</p>
-      <p className="text-ink-3 text-step-neg1 mt-8">
-        Sections and components are built in a later step.
-      </p>
-    </main>
+    <>
+      <SiteHeader />
+      <Hero />
+      <div id="sections" className="px-6 md:px-12 lg:px-20">
+        {/* Work, Projects, Background and Contact sections are added in the next step.
+            Each one wraps its content in <Section /> and falls back to <EmptyState />
+            when the active query filters everything out. */}
+      </div>
+      <SiteFooter />
+    </>
   );
 }

@@ -5,7 +5,7 @@ import { skills } from "./skills";
 import type { SearchableItem } from "./types";
 
 export * from "./types";
-export { profile } from "./profile";
+export { profile, searchExamples } from "./profile";
 export { experience } from "./experience";
 export { projects } from "./projects";
 export { skills } from "./skills";
