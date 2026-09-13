@@ -1,9 +1,10 @@
-import { searchTextFrom, type SkillGroup } from "./types";
+import { searchTextFrom, type Domain, type SkillGroup } from "./types";
 
-const groups: { id: string; category: string; skills: string[] }[] = [
+const groups: { id: string; category: string; domain: Domain; skills: string[] }[] = [
   {
     id: "skills-ai-llm",
     category: "AI & LLM",
+    domain: "model",
     skills: [
       "Large Language Models",
       "Retrieval-Augmented Generation",
@@ -21,11 +22,13 @@ const groups: { id: string; category: string; skills: string[] }[] = [
   {
     id: "skills-languages",
     category: "Languages",
+    domain: "retrieval",
     skills: ["Python", "TypeScript", "JavaScript", "SQL", "Java", "C", "C++", "R"],
   },
   {
     id: "skills-frameworks",
     category: "Frameworks",
+    domain: "retrieval",
     skills: [
       "React",
       "Next.js",
@@ -41,6 +44,7 @@ const groups: { id: string; category: string; skills: string[] }[] = [
   {
     id: "skills-cloud-devops",
     category: "Cloud & DevOps",
+    domain: "infra",
     skills: [
       "Docker",
       "Kubernetes",
@@ -54,16 +58,19 @@ const groups: { id: string; category: string; skills: string[] }[] = [
   {
     id: "skills-data-messaging",
     category: "Data & Messaging",
+    domain: "infra",
     skills: ["MySQL", "PostgreSQL", "MongoDB", "SQLite", "Kafka/Redpanda", "Redis"],
   },
   {
     id: "skills-enterprise",
     category: "Enterprise",
+    domain: "infra",
     skills: ["Jira", "Confluence", "SonarQube", "Jenkins", "Azure DevOps", "Postman"],
   },
   {
     id: "skills-security",
     category: "Security",
+    domain: "adversary",
     skills: ["Nmap", "Wireshark", "Burp Suite", "Metasploit", "Kali Linux"],
   },
 ];
@@ -72,6 +79,7 @@ export const skills: SkillGroup[] = groups.map((group) => ({
   id: group.id,
   kind: "skill",
   category: group.category,
+  domain: group.domain,
   skills: group.skills,
   searchText: searchTextFrom(group.category, group.skills),
 }));

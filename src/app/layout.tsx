@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
-import { ThemeProvider } from "next-themes";
 import { degree, profile, skills } from "@/content";
+import { ThemeProvider } from "@/components/theme/theme-provider";
 import { SearchProvider } from "@/components/search/search-provider";
+import { SiteHeader } from "@/components/chrome/site-header";
+import { SiteFooter } from "@/components/chrome/site-footer";
 import { isPlaceholder } from "@/lib/format";
 import { SITE_URL } from "@/lib/site";
 import "./globals.css";
@@ -81,20 +83,17 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: personJsonLdHtml }}
         />
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
+        <ThemeProvider>
           <SearchProvider>
             <a
               href="#content"
-              className="text-step-neg1 focus:border-rule focus:bg-surface focus:text-ink sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-control focus:border focus:px-4 focus:py-2"
+              className="text-step-neg1 focus:border-rule focus:bg-surface focus:text-ink sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[60] focus:rounded-control focus:border focus:px-4 focus:py-2"
             >
               Skip to content
             </a>
+            <SiteHeader />
             {children}
+            <SiteFooter />
           </SearchProvider>
         </ThemeProvider>
       </body>

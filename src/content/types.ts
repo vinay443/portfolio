@@ -1,5 +1,8 @@
 export type ContentKind = "experience" | "project" | "skill" | "education";
 
+/** What a piece of content is about. Drives its hue — see the --c-* tokens. */
+export type Domain = "retrieval" | "model" | "infra" | "verified" | "adversary";
+
 /** Every indexable piece of content carries these three fields. */
 export interface ContentItem {
   id: string;
@@ -28,6 +31,8 @@ export interface Profile {
   lookingFor: string;
   links: ProfileLink[];
   resumeUrl: string;
+  /** Résumé links render only when true. Flip it once public/resume.pdf exists. */
+  resumeAvailable: boolean;
   /** This site's own source repository. */
   repoUrl: string;
 }
@@ -44,6 +49,7 @@ export interface ExperienceItem extends ContentItem {
   period: string;
   bullets: string[];
   tags: string[];
+  domain: Domain;
 }
 
 export type ProjectStatus = "active" | "complete" | "archived";
@@ -61,22 +67,26 @@ export interface ProjectItem extends ContentItem {
   /** One string per paragraph. */
   longDescription: string[];
   role: string;
-  period: string;
+  /** Omitted when the dates are not known, rather than filled with a placeholder. */
+  period?: string;
   stack: string[];
   highlights: string[];
   metrics?: ProjectMetric[];
-  repoUrl?: string;
-  liveUrl?: string;
+  /** Explicitly null when there is no public repository. */
+  repoUrl: string | null;
+  liveUrl: string | null;
   status: ProjectStatus;
   featured: boolean;
   /** Client-related work that must not be published in detail. */
   sensitive: boolean;
+  domain: Domain;
 }
 
 export interface SkillGroup extends ContentItem {
   kind: "skill";
   category: string;
   skills: string[];
+  domain: Domain;
 }
 
 export type EducationVariant = "degree" | "certification";

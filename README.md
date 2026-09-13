@@ -69,7 +69,7 @@ One limitation worth stating plainly: MiniLM truncates at 256 tokens, so only th
 | Tailwind CSS v4 | CSS-first theming: every token is a custom property in `globals.css`, and `.dark` redefines the same names. |
 | transformers.js (`@huggingface/transformers`) | Runs the embedding model in the browser over WASM, so semantic search needs no server and no key. |
 | Motion | Layout animation for the re-ranking transition — the one interaction on the site worth animating. |
-| next-themes | System, light and dark without a flash of the wrong theme on load. |
+| Local theme provider | System, light and dark with no flash on load. Replaces next-themes, whose inline `<script>` triggers React 19's "Encountered a script tag" warning and whose dual CJS/ESM build can split the theme context in two. The pre-paint script is written through `useServerInsertedHTML`, outside React's client tree. |
 | lucide-react | Consistent icon set, tree-shaken, no icon font to load. |
 | GitHub Actions | Lint and build on every push and pull request. |
 
@@ -81,17 +81,19 @@ scripts/
 
 src/
 ├── app/
-│   ├── layout.tsx              Fonts, theme + search providers, metadata, JSON-LD
-│   ├── page.tsx                Home: hero, sections, chrome
+│   ├── layout.tsx              Fonts, providers, header + footer, metadata, JSON-LD
+│   ├── page.tsx                Home: hero and sections
 │   ├── globals.css             Every design token; the only place colour is defined
 │   ├── opengraph-image.tsx     1200x630 social card, generated at build time
 │   ├── sitemap.ts, robots.ts   Generated from the content layer
 │   └── projects/[slug]/        Statically generated project detail routes
 ├── components/
 │   ├── chrome/                 Header, footer, theme toggle
+│   ├── hero/                   Similarity field — the live map of the index
 │   ├── search/                 Search context, ranked list, result summary
 │   ├── sections/               Hero, experience, projects, skills, background, contact
-│   └── ui/                     Section, empty state, rule list, stack list
+│   ├── theme/                  Theme provider and pre-paint script
+│   └── ui/                     Section, empty state, rule list, stack list, row bar
 ├── content/                    All site copy, as typed modules — see below
 ├── generated/                  Committed embeddings.json — never edited by hand
 └── lib/
@@ -99,6 +101,9 @@ src/
     ├── semantic.ts             Lazy in-browser model, query embedding, cosine
     ├── hybrid.ts               Weighted blend of the two, plus the similarity floor
     ├── highlight.tsx           Wraps matched tokens in <mark>, returns React nodes
+    ├── domain.ts               Domain → colour class maps, project status colour
+    ├── stack-domain.ts         Which domain each technology belongs to
+    ├── prng.ts                 Seeded mulberry32 for the deterministic field layout
     ├── format.ts               Date-range and placeholder helpers
     └── cn.ts                   clsx + tailwind-merge, extended for project tokens
 ```
@@ -130,23 +135,28 @@ No copy is hardcoded in a component. Everything lives in `src/content/` as typed
 
 To add a project, append an entry to the `seeds` array in `src/content/projects.ts`:
 
-- **Required:** `slug` (URL-safe, becomes `/projects/<slug>`), `title`, `oneLiner`, `longDescription` (an array, one string per paragraph), `role`, `period`, `stack`, `highlights`, `status` (`active`, `complete` or `archived`), `featured`, `sensitive`.
-- **Optional:** `metrics` (label/value pairs), `repoUrl`, `liveUrl`.
+- **Required:** `slug` (URL-safe, becomes `/projects/<slug>`), `title`, `oneLiner`, `longDescription` (an array, one string per paragraph), `role`, `stack`, `highlights`, `status` (`active`, `complete` or `archived`), `featured`, `sensitive`, `domain`, and `repoUrl` / `liveUrl` — each either a URL or an explicit `null`, never an invented link.
+- **Optional:** `period` (omit it when the dates are not known), `metrics` (label/value pairs).
 
-Two fields carry behaviour:
+`domain` is one of `retrieval`, `model`, `infra`, `verified` or `adversary`. It sets the hue of the row's edge bar and, with `status`, the colour of its status text. Experience entries and skill groups carry one too.
+
+Three fields carry behaviour:
 
 - **`searchText`** is the substrate the ranker reads. It is built by `searchTextFrom()` when the array is mapped, so it cannot drift from the item it describes. Do not write it by hand.
 - **`sensitive: true`** removes a project from the index, from `generateStaticParams` and from the sitemap, and makes its route return 404. Client work that cannot be published in detail belongs in `experience.ts` at resume level of detail instead.
+
+- **`resumeAvailable`** in `profile.ts` is `false` by default, which hides the résumé links in the footer and the contact section. To enable them, drop the file at `public/resume.pdf` and set the flag to `true`.
 
 Facts that are not yet confirmed are written as the literal string `TODO:` followed by what is missing. The UI checks for that prefix and omits the field rather than printing it.
 
 ## Design decisions
 
 - One type family, IBM Plex, with the monospace reserved for genuine data — dates, metrics, status — and never used as decoration.
-- Design tokens over hardcoded values. No component contains a hex code; `globals.css` is the only place colour is defined.
+- Design tokens over hardcoded values. No component contains a hex code; `globals.css` defines every colour. The single exception is `src/lib/og-theme.ts`, because the OG image renderer cannot read CSS custom properties.
+- Colour encodes what something is, never decoration. Five hues on one flat chroma plane — retrieval, model, infra, verified, adversary — mark domains on row edges, stack entries, skill groups and status. While a query is active, each row's edge bar also shows how strongly it matched, with its normalised score beside it: the page explains its own ranking.
 - Hairline rules and whitespace instead of cards and shadows. The only shadow on the site is the focus ring.
-- Motion appears twice: once on page load, and once for user-triggered re-ranking. Nothing animates on scroll, and nothing animates on hover beyond a colour transition.
-- `prefers-reduced-motion` is honoured throughout — the load sequence, the re-ranking transition and the cycling placeholder all settle into their final state instead.
+- Motion appears only on page load and in response to a query: rows re-rank, and the similarity field lights up the items that matched. Nothing animates on scroll, and nothing animates on hover beyond a colour transition.
+- `prefers-reduced-motion` is honoured throughout — the load sequence, the re-ranking transition, the similarity field and the cycling placeholder all settle into their final state instead.
 - Colour pairs meet WCAG AA at their intended text sizes in both themes.
 
 ## Deployment

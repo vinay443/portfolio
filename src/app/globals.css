@@ -17,9 +17,19 @@
   --ink-2: #4a5054;
   --ink-3: #6a7075;
   --rule: #dcdfda;
-  --accent: #0f4c5c;
+
+  /* Semantic hues. Colour encodes what something is, never decoration: one flat
+   * chroma plane, five meanings. */
+  --c-retrieval: #0f4c5c; /* search, relevance, links, focus */
+  --c-model: #5b3fa8; /* LLMs, ML, embeddings */
+  --c-infra: #8a5a12; /* cloud, containers, data, messaging */
+  --c-verified: #1f6b42; /* shipped or complete work, metrics */
+  --c-adversary: #9e2b25; /* security, red-teaming, attack surfaces */
+
+  /* Resolves against whichever --c-retrieval is active, because both live on
+   * <html>; .dark does not need to redeclare it. */
+  --accent: var(--c-retrieval);
   --accent-fg: #ffffff;
-  --flag: #9e2b25;
 
   color-scheme: light;
 
@@ -45,7 +55,9 @@
 
   --radius: 3px;
   --measure: 68ch;
-  --section-gap: 4.5rem; /* 72px, mobile */
+  /* The width text actually reaches. Rules stop here too. */
+  --column: 56rem; /* 896px */
+  --section-gap: 3.5rem; /* 56px, mobile */
 }
 
 .dark {
@@ -55,16 +67,21 @@
   --ink-2: #a8afb2;
   --ink-3: #7b8488;
   --rule: #262c2f;
-  --accent: #5fb6c9;
+
+  --c-retrieval: #5fb6c9;
+  --c-model: #a78bdb;
+  --c-infra: #e0a860;
+  --c-verified: #6fc28c;
+  --c-adversary: #e0685f;
+
   --accent-fg: #0f1214;
-  --flag: #e0685f;
 
   color-scheme: dark;
 }
 
 @media (min-width: 48rem) {
   :root {
-    --section-gap: 8rem; /* 128px, desktop */
+    --section-gap: 6rem; /* 96px, desktop */
   }
 }
 
@@ -85,7 +102,12 @@
   --color-rule: var(--rule);
   --color-accent: var(--accent);
   --color-accent-fg: var(--accent-fg);
-  --color-flag: var(--flag);
+
+  --color-retrieval: var(--c-retrieval);
+  --color-model: var(--c-model);
+  --color-infra: var(--c-infra);
+  --color-verified: var(--c-verified);
+  --color-adversary: var(--c-adversary);
 
   /* Negative steps are spelled `neg` here because Tailwind parses `--` inside
    * a font-size token name as the start of a paired modifier. */
@@ -121,6 +143,7 @@
   --radius-control: var(--radius);
 
   --container-measure: var(--measure);
+  --container-column: var(--column);
 }
 
 @layer base {
@@ -153,6 +176,15 @@
   :where(a, button, input, textarea, select, summary, [tabindex]:not([tabindex="-1"])):focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
+  }
+}
+
+/* Without a working backdrop filter the translucent header would show page text
+ * straight through it, so it goes fully opaque instead. Unlayered, so it beats
+ * the utility background. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .site-header {
+    background-color: var(--bg);
   }
 }
 

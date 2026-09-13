@@ -3,15 +3,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { projects, type ProjectItem } from "@/content";
-import { SiteFooter } from "@/components/chrome/site-footer";
 import { StackList } from "@/components/ui/stack-list";
 import { RuleList, RuleListItem } from "@/components/ui/rule-list";
-import { isPlaceholder } from "@/lib/format";
+import { projectStatusClass } from "@/lib/domain";
 
-// The only use of --flag on the site: highlights describing adversarial or
-// security behaviour get a red leading rule instead of the neutral one.
+// Highlights describing adversarial or security behaviour get an adversary-hued
+// leading rule instead of the neutral one.
 const ADVERSARIAL =
   /\b(attack|adversar|inject|hijack|sandbox|guard|red[- ]?team|vulnerab|cryptanal|resistance|traversal|security)/i;
+
+const LINK_CLASSES = "text-retrieval underline underline-offset-4 break-all";
 
 function publishedProject(slug: string): ProjectItem | undefined {
   return projects.find((project) => project.slug === slug && !project.sensitive);
@@ -50,96 +51,95 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
   if (!project) notFound();
 
   const facts: { label: string; value: ReactNode }[] = [];
-  if (!isPlaceholder(project.period)) facts.push({ label: "Period", value: project.period });
+  if (project.period) facts.push({ label: "Period", value: project.period });
   facts.push({ label: "Role", value: project.role });
-  facts.push({ label: "Status", value: project.status });
-  if (project.repoUrl && !isPlaceholder(project.repoUrl)) {
+  facts.push({
+    label: "Status",
+    value: <span className={projectStatusClass(project)}>{project.status}</span>,
+  });
+  if (project.repoUrl) {
     facts.push({
       label: "Repository",
       value: (
-        <a href={project.repoUrl} className="hover:text-accent underline underline-offset-4">
-          {project.repoUrl}
+        <a href={project.repoUrl} className={LINK_CLASSES}>
+          {project.repoUrl.replace(/^https?:\/\//, "")}
         </a>
       ),
     });
   }
-  if (project.liveUrl && !isPlaceholder(project.liveUrl)) {
+  if (project.liveUrl) {
     facts.push({
       label: "Live",
       value: (
-        <a href={project.liveUrl} className="hover:text-accent underline underline-offset-4">
-          {project.liveUrl}
+        <a href={project.liveUrl} className={LINK_CLASSES}>
+          {project.liveUrl.replace(/^https?:\/\//, "")}
         </a>
       ),
     });
   }
 
   return (
-    <>
-      <main id="content" tabIndex={-1} className="flex-1 outline-none">
-        <article className="px-6 pt-16 pb-20 md:px-12 lg:px-20">
-          <Link href="/#projects" className="text-step-neg1 text-ink-2 hover:text-accent">
-            Back to projects
-          </Link>
+    <main id="content" tabIndex={-1} className="flex-1 px-6 outline-none md:px-12 lg:px-20">
+      <article className="max-w-column pt-16 pb-20">
+        <Link href="/#projects" className="text-step-neg1 text-ink-2 hover:text-accent">
+          Back to projects
+        </Link>
 
-          <h1 className="text-step-5 mt-10 leading-[1.08] font-semibold tracking-[-0.028em]">
-            {project.title}
-          </h1>
+        <h1 className="text-step-5 mt-10 leading-[1.08] font-semibold tracking-[-0.028em]">
+          {project.title}
+        </h1>
 
-          <p className="text-step-2 text-ink-2 mt-5 max-w-[52ch]">{project.oneLiner}</p>
+        <p className="text-step-2 text-ink-2 mt-5 max-w-[52ch]">{project.oneLiner}</p>
 
-          <dl className="text-step-neg1 border-rule mt-10 grid gap-x-8 gap-y-2 border-t pt-6 font-mono sm:grid-cols-[8rem_1fr]">
-            {facts.map((fact) => (
-              <Fragment key={fact.label}>
-                <dt className="text-ink-3">{fact.label}</dt>
-                <dd className="text-ink-2">{fact.value}</dd>
-              </Fragment>
+        <dl className="text-step-neg1 border-rule mt-10 grid gap-x-8 gap-y-2 border-t pt-6 font-mono sm:grid-cols-[8rem_1fr]">
+          {facts.map((fact) => (
+            <Fragment key={fact.label}>
+              <dt className="text-ink-3">{fact.label}</dt>
+              <dd className="text-ink-2">{fact.value}</dd>
+            </Fragment>
+          ))}
+        </dl>
+
+        <div className="max-w-measure mt-12 flex flex-col gap-5">
+          {project.longDescription.map((paragraph) => (
+            <p key={paragraph} className="text-step-0 leading-[1.6]">
+              {paragraph}
+            </p>
+          ))}
+        </div>
+
+        <section className="mt-12">
+          <h2 className="text-step-1 font-medium">Highlights</h2>
+          <RuleList className="mt-5">
+            {project.highlights.map((entry) => (
+              <RuleListItem key={entry} tone={ADVERSARIAL.test(entry) ? "adversary" : "rule"}>
+                {entry}
+              </RuleListItem>
             ))}
-          </dl>
+          </RuleList>
+        </section>
 
-          <div className="max-w-measure mt-12 flex flex-col gap-5">
-            {project.longDescription.map((paragraph) => (
-              <p key={paragraph} className="text-step-0 leading-[1.6]">
-                {paragraph}
-              </p>
-            ))}
+        <section className="mt-12">
+          <h2 className="text-step-1 font-medium">Stack</h2>
+          <div className="mt-4">
+            <StackList stack={project.stack} />
           </div>
+        </section>
 
+        {project.metrics ? (
           <section className="mt-12">
-            <h2 className="text-step-1 font-medium">Highlights</h2>
-            <RuleList className="mt-5">
-              {project.highlights.map((entry) => (
-                <RuleListItem key={entry} tone={ADVERSARIAL.test(entry) ? "flag" : "rule"}>
-                  {entry}
-                </RuleListItem>
+            <h2 className="text-step-1 font-medium">Measured</h2>
+            <dl className="mt-4 flex flex-wrap gap-x-12 gap-y-4">
+              {project.metrics.map((metric) => (
+                <div key={metric.label}>
+                  <dt className="text-step-neg1 text-ink-3">{metric.label}</dt>
+                  <dd className="text-step-1 text-verified font-medium">{metric.value}</dd>
+                </div>
               ))}
-            </RuleList>
+            </dl>
           </section>
-
-          <section className="mt-12">
-            <h2 className="text-step-1 font-medium">Stack</h2>
-            <div className="mt-4">
-              <StackList stack={project.stack} />
-            </div>
-          </section>
-
-          {project.metrics ? (
-            <section className="mt-12">
-              <h2 className="text-step-1 font-medium">Measured</h2>
-              <dl className="mt-4 flex flex-wrap gap-x-12 gap-y-4">
-                {project.metrics.map((metric) => (
-                  <div key={metric.label}>
-                    <dt className="text-step-neg1 text-ink-3">{metric.label}</dt>
-                    <dd className="text-step-1 text-accent font-medium">{metric.value}</dd>
-                  </div>
-                ))}
-              </dl>
-            </section>
-          ) : null}
-        </article>
-      </main>
-
-      <SiteFooter />
-    </>
+        ) : null}
+      </article>
+    </main>
   );
 }

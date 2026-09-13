@@ -14,7 +14,6 @@ const seeds: ProjectSeed[] = [
       "The judge is deliberately a separate component from the attacker. A single model that both writes and grades attacks marks its own phrasings generously, which inflates the success rate and hides the categories that actually work.",
     ],
     role: "Sole developer",
-    period: "TODO: confirm project period",
     stack: ["Python", "Docker", "LLMs", "Sandboxing", "Evaluation Harness"],
     highlights: [
       "Agent under test runs in Docker with resource limits and path-traversal guards on its file tools",
@@ -22,10 +21,12 @@ const seeds: ProjectSeed[] = [
       "Judge scores each transcript against the attack's stated objective, separately from the attacker that wrote it",
       "Runner reports attack success rate broken out by attack category",
     ],
-    repoUrl: "TODO: confirm https://github.com/vinay443/agent-redteam",
+    repoUrl: "https://github.com/vinay443/agent-redteam",
+    liveUrl: null,
     status: "active",
     featured: true,
     sensitive: false,
+    domain: "adversary",
   },
   {
     slug: "fraud-detection-api",
@@ -38,7 +39,6 @@ const seeds: ProjectSeed[] = [
       "The service is containerized and deployed to Kubernetes, with the Kafka consumer group and the API scaled separately because their load profiles differ. Throughput and latency were measured over a replay of more than 100,000 transactions.",
     ],
     role: "Sole developer",
-    period: "TODO: confirm project period",
     stack: ["Python", "XGBoost", "FastAPI", "Kafka/Redpanda", "Docker", "Kubernetes"],
     highlights: [
       "Streaming and REST serving paths share one model artifact and one feature-building module",
@@ -49,7 +49,10 @@ const seeds: ProjectSeed[] = [
     metrics: [{ label: "Transactions in benchmark replay", value: "100K+" }],
     status: "complete",
     featured: true,
+    repoUrl: null,
+    liveUrl: null,
     sensitive: false,
+    domain: "infra",
   },
   {
     slug: "adaptive-encryption-ml",
@@ -72,7 +75,10 @@ const seeds: ProjectSeed[] = [
     ],
     status: "complete",
     featured: true,
+    repoUrl: null,
+    liveUrl: null,
     sensitive: false,
+    domain: "adversary",
   },
   {
     slug: "discord-activity-analysis",
@@ -85,7 +91,6 @@ const seeds: ProjectSeed[] = [
       "The output was a set of Matplotlib visualizations covering activity over time, participation concentration, and sentiment trend, delivered to inform community engagement decisions.",
     ],
     role: "Sole developer",
-    period: "TODO: confirm project period",
     stack: ["Python", "Pandas", "Matplotlib", "Sentiment Analysis"],
     highlights: [
       "Unique-participant counts used alongside message volume to separate a busy day from a loud one",
@@ -94,7 +99,10 @@ const seeds: ProjectSeed[] = [
     ],
     status: "complete",
     featured: false,
+    repoUrl: null,
+    liveUrl: null,
     sensitive: false,
+    domain: "model",
   },
   {
     slug: "adam-optimizer",
@@ -107,7 +115,6 @@ const seeds: ProjectSeed[] = [
       "The learning rate and both decay rates were tuned by sweep, with the loss trajectory recorded per configuration to show where the optimizer overshot the valley floor and where it stalled.",
     ],
     role: "Sole developer",
-    period: "TODO: confirm project period",
     stack: ["Python", "NumPy", "Numerical Optimization"],
     highlights: [
       "Moment estimates, bias correction, and update rule implemented directly rather than imported",
@@ -117,7 +124,10 @@ const seeds: ProjectSeed[] = [
     metrics: [{ label: "Convergence vs. gradient descent", value: "~25% faster" }],
     status: "complete",
     featured: false,
+    repoUrl: null,
+    liveUrl: null,
     sensitive: false,
+    domain: "model",
   },
 ];
 

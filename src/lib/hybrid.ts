@@ -25,6 +25,9 @@ export const LEXICAL_WEIGHT = 0.4;
  * Hybrid of the lexical scorer and cosine similarity. Falls back to pure lexical
  * ranking whenever there is no query vector — model still loading, model failed,
  * or embeddings never generated — so the feature can only ever add to the site.
+ *
+ * Scores are always on a 0–1 scale, in both modes, so the relevance bars and score
+ * readouts mean the same thing whether or not the model has loaded.
  */
 export function hybridRank<T extends Rankable & { id: string }>(
   items: T[],
@@ -36,7 +39,12 @@ export function hybridRank<T extends Rankable & { id: string }>(
     return items.map((item) => ({ item, score: 0 }));
   }
 
-  if (!queryVector) return lexicalRank(items, query);
+  if (!queryVector) {
+    return lexicalRank(items, query).map(({ item, score }) => ({
+      item,
+      score: Math.min(1, score / MAX_TOKEN_SCORE),
+    }));
+  }
 
   return items
     .map((item, index) => {

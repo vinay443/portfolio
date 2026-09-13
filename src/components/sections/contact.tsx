@@ -5,7 +5,9 @@ import { isPlaceholder } from "@/lib/format";
 export function Contact() {
   const secondary = [
     ...profile.links.filter((link) => link.label !== "Email"),
-    { label: "Download résumé", href: profile.resumeUrl, handle: profile.resumeUrl },
+    ...(profile.resumeAvailable
+      ? [{ label: "Download résumé", href: profile.resumeUrl, handle: profile.resumeUrl }]
+      : []),
   ];
 
   return (
@@ -16,7 +18,7 @@ export function Contact() {
         <p className="mt-8">
           <a
             href={`mailto:${profile.email}`}
-            className="text-step-3 hover:text-accent font-medium tracking-[-0.02em] transition-colors"
+            className="text-step-3 hover:text-accent font-medium tracking-[-0.02em] break-all transition-colors"
           >
             {profile.email}
           </a>

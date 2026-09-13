@@ -47,6 +47,7 @@ export const experience: ExperienceItem[] = [
   {
     id: "saksoft-ai-engineer",
     kind: "experience",
+    domain: "retrieval",
     company: "Saksoft",
     client: "HDFC Bank",
     role: "AI Engineer",
@@ -68,6 +69,7 @@ export const experience: ExperienceItem[] = [
   {
     id: "rutgers-ml-research-assistant",
     kind: "experience",
+    domain: "model",
     company: "Rutgers University",
     role: "Machine Learning Research Assistant",
     location: "New Jersey, USA",
@@ -87,6 +89,7 @@ export const experience: ExperienceItem[] = [
   {
     id: "insys-cybersecurity-intern",
     kind: "experience",
+    domain: "adversary",
     company: "Insys Technologies",
     role: "Cybersecurity Analyst Intern",
     location: "Mumbai, India",

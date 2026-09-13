@@ -1,7 +1,7 @@
 import type { Profile } from "./types";
 
-// The GitHub and LinkedIn hrefs are placeholders and will render as broken links
-// until they are confirmed. Replace both before the site goes public.
+// The LinkedIn href is still a placeholder; the UI renders it as plain text rather
+// than a link until it is replaced.
 export const profile: Profile = {
   name: "Vinay Warrier",
   role: "AI Engineer",
@@ -22,8 +22,8 @@ export const profile: Profile = {
     },
     {
       label: "GitHub",
-      href: "TODO: confirm https://github.com/vinay443",
-      handle: "TODO: confirm github.com/vinay443",
+      href: "https://github.com/vinay443",
+      handle: "github.com/vinay443",
     },
     {
       label: "LinkedIn",
@@ -32,6 +32,7 @@ export const profile: Profile = {
     },
   ],
   resumeUrl: "/resume.pdf",
+  resumeAvailable: false,
   repoUrl: "TODO: repo URL for this site",
 };
 

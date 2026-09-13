@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { profile } from "@/content";
 import { cn } from "@/lib/cn";
@@ -17,10 +18,14 @@ const NAV = [
 const HEADER_HEIGHT = 56;
 
 export function SiteHeader() {
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const pathname = usePathname();
+  const onHome = pathname === "/";
   const [open, setOpen] = useState(false);
+  const [spy, setSpy] = useState<{ path: string; id: string | null }>({ path: "", id: null });
   const panelId = useId();
 
+  // The header lives in the root layout and survives navigation, so the observer
+  // is rebuilt per route. Off the home page there are no sections to find.
   useEffect(() => {
     const sections = NAV.map((item) => document.getElementById(item.id)).filter(
       (element): element is HTMLElement => element !== null,
@@ -34,25 +39,24 @@ export function SiteHeader() {
           visibility.set(entry.target.id, entry.isIntersecting);
         }
         const active = NAV.find((item) => visibility.get(item.id));
-        setActiveId(active ? active.id : null);
+        setSpy({ path: pathname, id: active ? active.id : null });
       },
       { rootMargin: `-${HEADER_HEIGHT}px 0px -55% 0px`, threshold: 0 },
     );
 
     for (const section of sections) observer.observe(section);
     return () => observer.disconnect();
-  }, []);
+  }, [pathname]);
 
-  const linkClasses = (id: string) =>
-    cn(
-      "text-step-neg1 border-b-2 pb-0.5 transition-colors",
-      activeId === id
-        ? "border-accent text-accent"
-        : "text-ink-2 hover:text-ink border-transparent",
-    );
+  // A reading from the previous route never lights up a link on this one.
+  const activeId = spy.path === pathname ? spy.id : null;
+
+  // A bare fragment keeps `?q=` intact on the home page; everywhere else the link
+  // has to leave the current route.
+  const hrefFor = (id: string) => (onHome ? `#${id}` : `/#${id}`);
 
   return (
-    <header className="border-rule bg-bg/80 sticky top-0 z-40 border-b backdrop-blur">
+    <header className="site-header border-rule sticky top-0 z-50 border-b bg-[color-mix(in_oklab,var(--bg)_86%,transparent)] backdrop-blur-md backdrop-saturate-150">
       <div className="flex h-14 items-center justify-between px-6 md:px-12 lg:px-20">
         <Link href="/" className="text-step-0 text-ink font-medium">
           {profile.name}
@@ -63,9 +67,14 @@ export function SiteHeader() {
             {NAV.map((item) => (
               <a
                 key={item.id}
-                href={`#${item.id}`}
+                href={hrefFor(item.id)}
                 aria-current={activeId === item.id ? "location" : undefined}
-                className={linkClasses(item.id)}
+                className={cn(
+                  "text-step-neg1 border-b-2 pb-0.5 transition-colors",
+                  activeId === item.id
+                    ? "border-accent text-accent"
+                    : "text-ink-2 hover:text-ink border-transparent",
+                )}
               >
                 {item.label}
               </a>
@@ -92,7 +101,7 @@ export function SiteHeader() {
           {NAV.map((item) => (
             <a
               key={item.id}
-              href={`#${item.id}`}
+              href={hrefFor(item.id)}
               onClick={() => setOpen(false)}
               aria-current={activeId === item.id ? "location" : undefined}
               className={cn(

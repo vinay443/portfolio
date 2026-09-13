@@ -1,18 +1,21 @@
+import { highlight } from "@/lib/highlight";
+import { DOMAIN_CHIP } from "@/lib/domain";
+import { stackDomain } from "@/lib/stack-domain";
 import { cn } from "@/lib/cn";
 
-/** Plain text entries divided by a hairline rule — not pills, not a joined string. */
-export function StackList({ stack }: { stack: string[] }) {
+/**
+ * Plain text entries tinted by what the technology is, each led by a hairline in
+ * the same hue — not pills, not fills, not a joined string.
+ */
+export function StackList({ stack, tokens = [] }: { stack: string[]; tokens?: string[] }) {
   return (
-    <ul className="flex flex-wrap items-center">
-      {stack.map((entry, index) => (
+    <ul className="flex flex-wrap items-center gap-y-1">
+      {stack.map((entry) => (
         <li
           key={entry}
-          className={cn(
-            "text-step-neg1 text-ink-3",
-            index === 0 ? "pr-3" : "border-rule border-l px-3",
-          )}
+          className={cn("text-step-neg1 border-l pr-3 pl-2", DOMAIN_CHIP[stackDomain(entry)])}
         >
-          {entry}
+          {highlight(entry, tokens)}
         </li>
       ))}
     </ul>

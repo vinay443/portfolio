@@ -5,6 +5,7 @@ import { skills } from "@/content";
 import { useSearch } from "@/components/search/search-provider";
 import { scoreItem } from "@/lib/search";
 import { highlight } from "@/lib/highlight";
+import { DOMAIN_TEXT } from "@/lib/domain";
 import { cn } from "@/lib/cn";
 
 export function Skills() {
@@ -23,10 +24,20 @@ export function Skills() {
 
           return (
             <Fragment key={group.id}>
-              <dt className={cn("text-step-0 font-medium", dimmed && "text-ink-3")}>
+              <dt
+                className={cn(
+                  "text-step-0 font-medium",
+                  dimmed ? "text-ink-3" : DOMAIN_TEXT[group.domain],
+                )}
+              >
                 {group.category}
               </dt>
-              <dd className={cn("flex flex-wrap items-center", dimmed && "text-ink-3")}>
+              <dd
+                className={cn(
+                  "flex flex-wrap items-center",
+                  dimmed ? "text-ink-3" : "text-ink-2",
+                )}
+              >
                 {group.skills.map((skill, index) => (
                   <span
                     key={skill}

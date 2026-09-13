@@ -91,6 +91,10 @@ function SearchParamsBridge({
       return;
     }
 
+    // The provider lives in the root layout and outlives navigation, so without
+    // this a search would follow the visitor onto every project page's URL.
+    if (pathname !== "/") return;
+
     const current = searchParams.get("q") ?? "";
     if (current === query) return;
 
@@ -114,7 +118,7 @@ export function SearchProvider({ children }: { children: ReactNode }) {
   const [query, setQuery] = useState("");
   const [appliedQuery, setAppliedQuery] = useState("");
   const [semanticStatus, setSemanticStatus] = useState<SemanticStatus>("idle");
-  const [queryVector, setQueryVector] = useState<number[] | null>(null);
+  const [embedded, setEmbedded] = useState<{ query: string; vector: number[] } | null>(null);
   const semanticRequested = useRef(false);
 
   useEffect(() => {
@@ -139,20 +143,24 @@ export function SearchProvider({ children }: { children: ReactNode }) {
   const isSearching = tokens.length > 0;
 
   useEffect(() => {
-    if (semanticStatus !== "ready" || !isSearching) {
-      setQueryVector(null);
-      return;
-    }
+    if (semanticStatus !== "ready" || !isSearching) return;
 
     let cancelled = false;
     embedQuery(appliedQuery).then((vector) => {
-      if (!cancelled) setQueryVector(vector);
+      if (!cancelled && vector) setEmbedded({ query: appliedQuery, vector });
     });
 
     return () => {
       cancelled = true;
     };
   }, [appliedQuery, isSearching, semanticStatus]);
+
+  // Derived rather than cleared from the effect above: a vector only counts while
+  // it still belongs to the query on screen, so a stale one can never rank results.
+  const queryVector =
+    semanticStatus === "ready" && isSearching && embedded?.query === appliedQuery
+      ? embedded.vector
+      : null;
 
   const resultCount = useMemo(
     () => (isSearching ? hybridRank(allContent, appliedQuery, queryVector).length : 0),

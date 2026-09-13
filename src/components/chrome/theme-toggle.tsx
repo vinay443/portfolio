@@ -1,46 +1,45 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useTheme } from "next-themes";
 import { Monitor, Moon, Sun } from "lucide-react";
-import { cn } from "@/lib/cn";
+import { useMounted, useTheme, type ThemeChoice } from "@/components/theme/theme-provider";
 
-const ORDER = ["system", "light", "dark"] as const;
-type ThemeChoice = (typeof ORDER)[number];
+const CYCLE: Record<ThemeChoice, ThemeChoice> = {
+  system: "light",
+  light: "dark",
+  dark: "system",
+};
 
-const ICONS = { system: Monitor, light: Sun, dark: Moon } as const;
-const LABELS = { system: "system", light: "light", dark: "dark" } as const;
+const ICON = { system: Monitor, light: Sun, dark: Moon } as const;
+
+const LABEL: Record<ThemeChoice, string> = {
+  system: "Use system theme",
+  light: "Switch to light theme",
+  dark: "Switch to dark theme",
+};
 
 const BUTTON_CLASSES =
   "text-ink-2 hover:text-ink rounded-control inline-flex size-9 items-center justify-center transition-colors";
 
-function isThemeChoice(value: string | undefined): value is ThemeChoice {
-  return value === "system" || value === "light" || value === "dark";
-}
-
 export function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
+  const { theme, resolvedTheme, setTheme } = useTheme();
+  const mounted = useMounted();
 
-  useEffect(() => setMounted(true), []);
-
-  // The stored theme is unknown until after hydration; rendering the real button
-  // before then would guess an icon and mismatch.
-  if (!mounted) {
+  // The stored choice is unknowable on the server. Rendering a guessed icon would
+  // mismatch on hydration, so hold a same-sized placeholder until it is known.
+  if (!mounted || theme === undefined) {
     return <span className={BUTTON_CLASSES} aria-hidden />;
   }
 
-  const current: ThemeChoice = isThemeChoice(theme) ? theme : "system";
-  const next = ORDER[(ORDER.indexOf(current) + 1) % ORDER.length] ?? "system";
-  const Icon = ICONS[current];
+  const next = CYCLE[theme];
+  const Icon = ICON[theme];
 
   return (
     <button
       type="button"
       onClick={() => setTheme(next)}
-      aria-label={`Switch to ${LABELS[next]} theme`}
-      title={`Theme: ${LABELS[current]}`}
-      className={cn(BUTTON_CLASSES)}
+      aria-label={LABEL[next]}
+      title={theme === "system" ? `Theme: system (${resolvedTheme ?? "light"})` : `Theme: ${theme}`}
+      className={BUTTON_CLASSES}
     >
       <Icon className="size-4" aria-hidden />
     </button>
