@@ -1,19 +1,26 @@
 "use client";
 
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { experience, projects, skills, type Domain } from "@/content";
 import { useSearch } from "@/components/search/search-provider";
-import { hybridRank } from "@/lib/hybrid";
 import { hashString, mulberry32 } from "@/lib/prng";
-import type { Rankable } from "@/lib/search";
+import { rank, type Rankable } from "@/lib/search";
 import { DOMAIN_FILL } from "@/lib/domain";
-import { cn } from "@/lib/cn";
 
 const SIZE = 420;
 const CENTER = SIZE / 2;
 const EDGE = 18;
 const EASE: [number, number, number, number] = [0.16, 1, 0.3, 1];
+
+// `r` stays fixed at the matched size and resting dots are scaled down to 3 units.
+// Animating `r` rebuilt every circle's geometry on every frame; a transform does not.
+const DOT_RADIUS = 5.5;
+const RESTING_SCALE = 3 / DOT_RADIUS;
+// Constant and unscaled, so a dot's hit area does not shrink along with it.
+const HIT_RADIUS = 8;
+// Up and Down move this many dots at a time.
+const ROW_STEP = 5;
 
 // One neighbourhood per domain, arranged loosely around the centre so the hues
 // read as regions rather than noise.
@@ -92,7 +99,11 @@ const POINTS: FieldPoint[] = entries.map(({ point }) => {
 const RANKABLES: FieldRankable[] = entries.map(({ rankable }) => rankable);
 const POINT_BY_ID = new Map(POINTS.map((point) => [point.id, point]));
 
-const WIDE_QUERY = "(min-width: 640px)";
+// Exactly the query Tailwind v4 emits for `sm:`, which the hero uses to show this
+// field's container. A rem in a media query resolves against the browser's default
+// font size in CSS and in matchMedia alike, so the container and the dots switch at
+// the same width whatever that size is. Change both together.
+const WIDE_QUERY = "(width >= 40rem)";
 
 function subscribeWide(listener: () => void): () => void {
   const media = window.matchMedia(WIDE_QUERY);
@@ -130,17 +141,21 @@ function FieldLabel({ point }: { point: FieldPoint }) {
   );
 }
 
-function Field() {
-  const { appliedQuery, queryVector, isSearching, setQuery } = useSearch();
+function Field({ onEscape }: { onEscape?: () => void }) {
+  const { parsedQuery, isSearching, setQuery } = useSearch();
   const reduceMotion = useReducedMotion();
   const [activeId, setActiveId] = useState<string | null>(null);
+  // Roving tabindex: the field is one tab stop, and this is the dot that holds it.
+  const [focusIndex, setFocusIndex] = useState(0);
+  const dotRefs = useRef<(SVGGElement | null)[]>([]);
 
-  // Same ranking the rows use, so the field and the list never disagree.
+  // Same ranking the rows use, so the field and the list never disagree. Keyed on
+  // the parsed debounced query, so hovering or moving focus never re-ranks.
   const order = useMemo(() => {
     if (!isSearching) return null;
-    const ranked = hybridRank(RANKABLES, appliedQuery, queryVector);
+    const ranked = rank(RANKABLES, parsedQuery);
     return new Map(ranked.map((result, index) => [result.item.id, index]));
-  }, [isSearching, appliedQuery, queryVector]);
+  }, [isSearching, parsedQuery]);
 
   const matchedByScore = useMemo(
     () =>
@@ -156,6 +171,50 @@ function Field() {
   const active = activeId ? POINT_BY_ID.get(activeId) : undefined;
 
   const release = (id: string) => setActiveId((current) => (current === id ? null : current));
+
+  // DOM focus moves with the index, not after it, so screen readers announce the
+  // new dot straight away. Focusing a tabIndex -1 element from script is allowed.
+  const moveFocus = (index: number) => {
+    const next = Math.min(POINTS.length - 1, Math.max(0, index));
+    setFocusIndex(next);
+    dotRefs.current[next]?.focus();
+  };
+
+  const onDotKeyDown = (event: KeyboardEvent<SVGGElement>, point: FieldPoint, index: number) => {
+    // Leave browser shortcuts such as Alt+Left alone.
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
+
+    switch (event.key) {
+      case "ArrowRight":
+        moveFocus(index + 1);
+        break;
+      case "ArrowLeft":
+        moveFocus(index - 1);
+        break;
+      case "ArrowDown":
+        moveFocus(index + ROW_STEP);
+        break;
+      case "ArrowUp":
+        moveFocus(index - ROW_STEP);
+        break;
+      case "Home":
+        moveFocus(0);
+        break;
+      case "End":
+        moveFocus(POINTS.length - 1);
+        break;
+      case "Enter":
+      case " ":
+        setQuery(point.label);
+        break;
+      case "Escape":
+        onEscape?.();
+        break;
+      default:
+        return;
+    }
+    event.preventDefault();
+  };
 
   return (
     <svg
@@ -189,38 +248,44 @@ function Field() {
         </g>
       )}
 
-      {POINTS.map((point) => {
+      {POINTS.map((point, index) => {
         const matched = order?.has(point.id) ?? false;
-        const radius = order && matched ? 5.5 : 3;
+        const scale = order && matched ? 1 : RESTING_SCALE;
         const opacity = !order ? 0.45 : matched ? 1 : 0.12;
 
         return (
-          <motion.circle
+          <g
             key={point.id}
-            cx={point.x}
-            cy={point.y}
-            initial={false}
-            animate={{ r: radius, opacity }}
-            transition={dotTransition}
-            // A transparent stroke widens the hit area well past the painted dot.
-            stroke="transparent"
-            strokeWidth={10}
-            tabIndex={0}
+            ref={(node) => {
+              dotRefs.current[index] = node;
+            }}
+            tabIndex={index === focusIndex ? 0 : -1}
             role="button"
-            className={cn(DOMAIN_FILL[point.domain], "cursor-pointer")}
+            className="cursor-pointer"
             onMouseEnter={() => setActiveId(point.id)}
             onMouseLeave={() => release(point.id)}
-            onFocus={() => setActiveId(point.id)}
+            onFocus={() => {
+              setActiveId(point.id);
+              // A click or a Shift+Tab back in also moves the tab stop here.
+              setFocusIndex(index);
+            }}
             onBlur={() => release(point.id)}
             onClick={() => setQuery(point.label)}
-            onKeyDown={(event) => {
-              if (event.key !== "Enter" && event.key !== " ") return;
-              event.preventDefault();
-              setQuery(point.label);
-            }}
+            onKeyDown={(event) => onDotKeyDown(event, point, index)}
           >
             <title>{point.label}</title>
-          </motion.circle>
+            <circle cx={point.x} cy={point.y} r={HIT_RADIUS} fill="transparent" />
+            <motion.circle
+              cx={point.x}
+              cy={point.y}
+              r={DOT_RADIUS}
+              initial={false}
+              animate={{ scale, opacity }}
+              transition={dotTransition}
+              style={{ transformBox: "fill-box", transformOrigin: "center" }}
+              className={DOMAIN_FILL[point.domain]}
+            />
+          </g>
         );
       })}
 
@@ -231,15 +296,20 @@ function Field() {
 
 /**
  * A live map of the content index. Decorative in effect: it renders nothing below
- * 640px, nothing before hydration, and nothing if it throws (see SilentBoundary),
+ * 40rem, nothing before hydration, and nothing if it throws (see SilentBoundary),
  * and the page is complete without it.
  */
-export function SimilarityField() {
+export function SimilarityField({
+  onEscape,
+}: {
+  /** Called when Escape is pressed on a dot. The hero returns focus to its field. */
+  onEscape?: () => void;
+}) {
   const wideEnough = useSyncExternalStore(
     subscribeWide,
     () => window.matchMedia(WIDE_QUERY).matches,
     () => false,
   );
 
-  return wideEnough ? <Field /> : null;
+  return wideEnough ? <Field onEscape={onEscape} /> : null;
 }

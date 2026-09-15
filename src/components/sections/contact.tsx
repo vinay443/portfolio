@@ -1,6 +1,5 @@
 import { profile } from "@/content";
 import { Section } from "@/components/ui/section";
-import { isPlaceholder } from "@/lib/format";
 
 export function Contact() {
   const secondary = [
@@ -27,16 +26,12 @@ export function Contact() {
         <ul className="text-step-0 mt-8 flex flex-wrap gap-x-6 gap-y-2">
           {secondary.map((link) => (
             <li key={link.label}>
-              {isPlaceholder(link.href) ? (
-                <span className="text-ink-3">{link.label}</span>
-              ) : (
-                <a
-                  href={link.href}
-                  className="text-ink-2 hover:text-accent underline-offset-4 hover:underline"
-                >
-                  {link.label}
-                </a>
-              )}
+              <a
+                href={link.href}
+                className="text-ink-2 hover:text-accent underline-offset-4 hover:underline"
+              >
+                {link.label}
+              </a>
             </li>
           ))}
         </ul>

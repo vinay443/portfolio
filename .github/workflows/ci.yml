@@ -27,3 +27,7 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          # A production build refuses to run without a site origin (src/lib/site.ts).
+          # CI output is never deployed, so a reserved documentation domain stands in.
+          NEXT_PUBLIC_SITE_URL: https://example.com

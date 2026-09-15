@@ -12,12 +12,55 @@ import {
   type ReactNode,
 } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { allContent } from "@/content";
-import { tokenize } from "@/lib/search";
-import { hybridRank } from "@/lib/hybrid";
-import { embedQuery, loadSemantic, type SemanticStatus } from "@/lib/semantic";
+import { education, experience, projects, skills } from "@/content";
+import { EMPTY_QUERY, parseQuery, rank, scoreItem, type ParsedQuery } from "@/lib/search";
 
 const DEBOUNCE_MS = 120;
+
+export interface MatchCounts {
+  roles: number;
+  projects: number;
+  /** Individual skills, not skill groups: the unit the Skills section lists and highlights. */
+  skills: number;
+  credentials: number;
+  total: number;
+}
+
+const NO_MATCHES: MatchCounts = { roles: 0, projects: 0, skills: 0, credentials: 0, total: 0 };
+
+const PUBLIC_PROJECTS = projects.filter((project) => !project.sensitive);
+
+/**
+ * Whether one skill matches, typed or expanded. The hero's skill count and the
+ * Skills section's dimming both call this, so a lit skill is always a counted one.
+ */
+export function skillMatches(skill: string, query: ParsedQuery): boolean {
+  return scoreItem({ searchText: skill.toLowerCase(), tags: [skill] }, query) > 0;
+}
+
+/**
+ * The one definition of a match, behind both the hero's count and the result
+ * summary, so the two cannot disagree. Each unit is scored by the ranker with typed
+ * and expanded terms and counts when it scores above zero, the same test that
+ * decides whether a row is shown.
+ */
+function countMatches(query: ParsedQuery): MatchCounts {
+  const roles = rank(experience, query).length;
+  const matchedProjects = rank(PUBLIC_PROJECTS, query).length;
+  const matchedSkills = skills.reduce(
+    (total, group) => total + group.skills.filter((skill) => skillMatches(skill, query)).length,
+    0,
+  );
+  const credentials = education.filter((item) => scoreItem(item, query) > 0).length;
+
+  return {
+    roles,
+    projects: matchedProjects,
+    skills: matchedSkills,
+    credentials,
+    total: roles + matchedProjects + matchedSkills + credentials,
+  };
+}
 
 export interface SearchContextValue {
   /** Instant, reflects the input. */
@@ -25,29 +68,28 @@ export interface SearchContextValue {
   setQuery: (next: string) => void;
   /** The debounced query. Everything that ranks content reads this, not `query`. */
   appliedQuery: string;
-  /** Derived from the debounced query, so it stays in step with `resultCount`. */
-  tokens: string[];
+  /**
+   * Derived from the debounced query, so it stays in step with `matchCounts`. Ranks,
+   * dims and highlights; `highlight()` reads only its typed tokens, never synonyms.
+   */
+  parsedQuery: ParsedQuery;
   isSearching: boolean;
+  /** Per-kind breakdown, read by the result summary. */
+  matchCounts: MatchCounts;
+  /** `matchCounts.total`, read by the hero. */
   resultCount: number;
   clear: () => void;
-  semanticStatus: SemanticStatus;
-  /** Starts the one-time model download. Safe to call repeatedly. */
-  activateSemantic: () => void;
-  /** Null until the model is ready and the current query has been embedded. */
-  queryVector: number[] | null;
 }
 
 const FALLBACK: SearchContextValue = {
   query: "",
   setQuery: () => {},
   appliedQuery: "",
-  tokens: [],
+  parsedQuery: EMPTY_QUERY,
   isSearching: false,
+  matchCounts: NO_MATCHES,
   resultCount: 0,
   clear: () => {},
-  semanticStatus: "idle",
-  activateSemantic: () => {},
-  queryVector: null,
 };
 
 const SearchContext = createContext<SearchContextValue | null>(null);
@@ -117,55 +159,23 @@ function SearchParamsBridge({
 export function SearchProvider({ children }: { children: ReactNode }) {
   const [query, setQuery] = useState("");
   const [appliedQuery, setAppliedQuery] = useState("");
-  const [semanticStatus, setSemanticStatus] = useState<SemanticStatus>("idle");
-  const [embedded, setEmbedded] = useState<{ query: string; vector: number[] } | null>(null);
-  const semanticRequested = useRef(false);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setAppliedQuery(query), DEBOUNCE_MS);
     return () => window.clearTimeout(timer);
   }, [query]);
 
-  const activateSemantic = useCallback(() => {
-    if (semanticRequested.current) return;
-    semanticRequested.current = true;
-    setSemanticStatus("loading");
-
-    loadSemantic()
-      .then((ready) => setSemanticStatus(ready ? "ready" : "failed"))
-      .catch(() => setSemanticStatus("failed"));
-  }, []);
-
-  const tokens = useMemo(() => tokenize(appliedQuery), [appliedQuery]);
+  const parsedQuery = useMemo(() => parseQuery(appliedQuery), [appliedQuery]);
 
   // A query of nothing but stopwords carries no signal, so it is treated as no
   // search at all rather than as a search that matches everything.
-  const isSearching = tokens.length > 0;
+  const isSearching = parsedQuery.tokens.length > 0;
 
-  useEffect(() => {
-    if (semanticStatus !== "ready" || !isSearching) return;
-
-    let cancelled = false;
-    embedQuery(appliedQuery).then((vector) => {
-      if (!cancelled && vector) setEmbedded({ query: appliedQuery, vector });
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [appliedQuery, isSearching, semanticStatus]);
-
-  // Derived rather than cleared from the effect above: a vector only counts while
-  // it still belongs to the query on screen, so a stale one can never rank results.
-  const queryVector =
-    semanticStatus === "ready" && isSearching && embedded?.query === appliedQuery
-      ? embedded.vector
-      : null;
-
-  const resultCount = useMemo(
-    () => (isSearching ? hybridRank(allContent, appliedQuery, queryVector).length : 0),
-    [isSearching, appliedQuery, queryVector],
+  const matchCounts = useMemo(
+    () => (isSearching ? countMatches(parsedQuery) : NO_MATCHES),
+    [isSearching, parsedQuery],
   );
+  const resultCount = matchCounts.total;
 
   const clear = useCallback(() => setQuery(""), []);
 
@@ -174,25 +184,13 @@ export function SearchProvider({ children }: { children: ReactNode }) {
       query,
       setQuery,
       appliedQuery,
-      tokens,
+      parsedQuery,
       isSearching,
+      matchCounts,
       resultCount,
       clear,
-      semanticStatus,
-      activateSemantic,
-      queryVector,
     }),
-    [
-      query,
-      appliedQuery,
-      tokens,
-      isSearching,
-      resultCount,
-      clear,
-      semanticStatus,
-      activateSemantic,
-      queryVector,
-    ],
+    [query, appliedQuery, parsedQuery, isSearching, matchCounts, resultCount, clear],
   );
 
   return (

@@ -3,13 +3,17 @@ import type { Domain } from "@/content";
 import { DOMAIN_BG } from "@/lib/domain";
 import { cn } from "@/lib/cn";
 
-/** How a row placed in its section's ranking. Only meaningful while searching. */
+/**
+ * How a row placed within its group — direct or related matches — of a section's
+ * ranking. Only meaningful while searching.
+ */
 export interface RowRank {
   searching: boolean;
-  /** 0–1, from hybridRank. */
-  score: number;
-  /** 0.4 for the weakest returned row in the section, 1 for the strongest. */
+  /** The row's total score divided by its group's highest, so each group's top row reads 1. */
+  normalizedScore: number;
+  /** 0.4 for the weakest row in its group, 1 for the strongest. */
   relevance: number;
+  /** First row of its group. Gets the wider bar. */
   isTop: boolean;
 }
 
@@ -41,7 +45,7 @@ export function ScoreReadout({ rank }: { rank: RowRank }) {
   if (!rank.searching) return null;
   return (
     <span className="text-step-neg1 text-ink-3 shrink-0 font-mono tabular-nums">
-      {rank.score.toFixed(2)}
+      {rank.normalizedScore.toFixed(2)}
     </span>
   );
 }

@@ -16,14 +16,9 @@ export function SiteFooter() {
         <ul className="text-step-neg1 flex flex-wrap gap-x-6 gap-y-2">
           {links.map((link) => (
             <li key={link.label}>
-              {isPlaceholder(link.href) ? (
-                // Rendered as text rather than a dead anchor until the URL is confirmed.
-                <span className="text-ink-3">{link.label}</span>
-              ) : (
-                <a href={link.href} className={LINK_CLASSES}>
-                  {link.label}
-                </a>
-              )}
+              <a href={link.href} className={LINK_CLASSES}>
+                {link.label}
+              </a>
             </li>
           ))}
         </ul>

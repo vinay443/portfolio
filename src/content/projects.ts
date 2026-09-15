@@ -21,6 +21,8 @@ const seeds: ProjectSeed[] = [
       "Judge scores each transcript against the attack's stated objective, separately from the attacker that wrote it",
       "Runner reports attack success rate broken out by attack category",
     ],
+    // Rendered as a live link. Verify this repository is public before deploying;
+    // a private repo shows visitors a GitHub 404.
     repoUrl: "https://github.com/vinay443/agent-redteam",
     liveUrl: null,
     status: "active",
@@ -32,7 +34,7 @@ const seeds: ProjectSeed[] = [
     slug: "fraud-detection-api",
     title: "Real-Time Fraud Detection API",
     oneLiner:
-      "An XGBoost transaction scorer served over both a Kafka stream and a synchronous REST endpoint.",
+      "A supervised machine learning transaction scorer, trained with XGBoost and served over both a Kafka stream and a synchronous REST endpoint.",
     longDescription: [
       "A transaction scoring service that serves an XGBoost model over two paths. Transactions arrive on a Kafka/Redpanda topic for continuous scoring, and a FastAPI endpoint answers synchronous checks for callers that need a decision before a payment completes.",
       "Both paths load the same model artifact and share one feature-building module. That constraint is what holds the design together: when streaming and request/response code compute features separately the two drift, and a transaction scored in the stream stops matching the same transaction scored over HTTP. Fraud labels are a fraction of a percent of volume, so evaluation used precision and recall rather than accuracy, a measure under which a model that answers \"legitimate\" every time already scores above 99%.",
@@ -110,7 +112,7 @@ const seeds: ProjectSeed[] = [
     oneLiner:
       "Adam implemented and tuned in Python, benchmarked against gradient descent on the Rosenbrock function.",
     longDescription: [
-      "An implementation of the Adam optimizer written from scratch in Python — moment estimates, bias correction, and the update rule — rather than called from a framework, in order to see how each term affects convergence.",
+      "Adam is an optimization algorithm for training neural networks. This implementation was written from scratch in Python — moment estimates, bias correction, and the update rule — rather than called from a framework, in order to see how each term affects convergence.",
       "It was benchmarked against plain gradient descent on the Rosenbrock function, a non-convex surface whose curved valley punishes optimizers that simply follow the steepest direction. Adam reached the target tolerance roughly 25% faster. The instructive part was bias correction: without it the first several steps are heavily damped, because both moment estimates start at zero, and on a surface like Rosenbrock those early steps decide which side of the valley the path settles into.",
       "The learning rate and both decay rates were tuned by sweep, with the loss trajectory recorded per configuration to show where the optimizer overshot the valley floor and where it stalled.",
     ],
@@ -142,6 +144,7 @@ export const projects: ProjectItem[] = seeds.map((seed) => ({
     seed.role,
     seed.stack,
     seed.highlights,
-    seed.status,
+    // `status` is left out: "active" and "complete" describe the page, not the work,
+    // and would direct-match every finished project for a reason no reader would see.
   ),
 }));

@@ -1,7 +1,5 @@
 import type { Profile } from "./types";
 
-// The LinkedIn href is still a placeholder; the UI renders it as plain text rather
-// than a link until it is replaced.
 export const profile: Profile = {
   name: "Vinay Warrier",
   role: "AI Engineer",
@@ -27,13 +25,13 @@ export const profile: Profile = {
     },
     {
       label: "LinkedIn",
-      href: "TODO: full LinkedIn URL needed",
-      handle: "TODO: full LinkedIn URL needed",
+      href: "https://www.linkedin.com/in/vinay-warrier/",
+      handle: "linkedin.com/in/vinay-warrier",
     },
   ],
   resumeUrl: "/resume.pdf",
   resumeAvailable: false,
-  repoUrl: "TODO: repo URL for this site",
+  repoUrl: "https://github.com/vinay443/portfolio",
 };
 
 /** Cycled through the hero query field as placeholder text. */

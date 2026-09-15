@@ -85,7 +85,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
           Back to projects
         </Link>
 
-        <h1 className="text-step-5 mt-10 leading-[1.08] font-semibold tracking-[-0.028em]">
+        <h1 className="text-step-5 mt-10 leading-[1.08] font-semibold tracking-[-0.028em] wrap-break-word">
           {project.title}
         </h1>
 

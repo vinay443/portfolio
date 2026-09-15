@@ -5,7 +5,6 @@ import { ThemeProvider } from "@/components/theme/theme-provider";
 import { SearchProvider } from "@/components/search/search-provider";
 import { SiteHeader } from "@/components/chrome/site-header";
 import { SiteFooter } from "@/components/chrome/site-footer";
-import { isPlaceholder } from "@/lib/format";
 import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
@@ -50,9 +49,14 @@ export const metadata: Metadata = {
   },
 };
 
-const profiles = profile.links
-  .map((link) => link.href)
-  .filter((href) => !isPlaceholder(href) && href.startsWith("http"));
+// `sameAs` is for the person's other profiles, so it is an explicit list rather than
+// every URL in the profile: a repository or any other link must never land here.
+// Looked up by label so each URL is still written once, in profile.ts.
+const SAME_AS_LABELS = ["GitHub", "LinkedIn"];
+const sameAs = SAME_AS_LABELS.flatMap((label) => {
+  const link = profile.links.find((entry) => entry.label === label);
+  return link ? [link.href] : [];
+});
 
 const personJsonLd = {
   "@context": "https://schema.org",
@@ -64,7 +68,7 @@ const personJsonLd = {
   address: { "@type": "PostalAddress", addressLocality: profile.location },
   alumniOf: { "@type": "CollegeOrUniversity", name: degree.institution },
   knowsAbout: skills.flatMap((group) => group.skills).slice(0, 24),
-  ...(profiles.length > 0 ? { sameAs: profiles } : {}),
+  ...(sameAs.length > 0 ? { sameAs } : {}),
 };
 
 // Escaping `<` is what stops a future content string containing "</script>" from
