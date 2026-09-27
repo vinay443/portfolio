@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { experience, projects, skills, type Domain } from "@/content";
+import { experience, projects, skills, skillSearchText, type Domain } from "@/content";
 import { useSearch } from "@/components/search/search-provider";
 import { hashString, mulberry32 } from "@/lib/prng";
 import { rank, type Rankable } from "@/lib/search";
@@ -69,7 +69,7 @@ const entries: { point: Omit<FieldPoint, "x" | "y">; rankable: FieldRankable }[]
       const id = `${group.id}:${slugify(skill)}`;
       return {
         point: { id, label: skill, domain: group.domain },
-        rankable: { id, title: skill, tags: [skill], searchText: skill.toLowerCase() },
+        rankable: { id, title: skill, tags: [skill], searchText: skillSearchText(skill) },
       };
     }),
   ),
@@ -99,11 +99,12 @@ const POINTS: FieldPoint[] = entries.map(({ point }) => {
 const RANKABLES: FieldRankable[] = entries.map(({ rankable }) => rankable);
 const POINT_BY_ID = new Map(POINTS.map((point) => [point.id, point]));
 
-// Exactly the query Tailwind v4 emits for `sm:`, which the hero uses to show this
-// field's container. A rem in a media query resolves against the browser's default
-// font size in CSS and in matchMedia alike, so the container and the dots switch at
-// the same width whatever that size is. Change both together.
-const WIDE_QUERY = "(width >= 40rem)";
+// The ranges in which the hero shows this field's container: from `sm:` until
+// `lg:`, then again from 81rem, where `lg:max-[81rem]:hidden` stops hiding it. A rem
+// in a media query resolves against the browser's default font size in CSS and in
+// matchMedia alike, so the container and the dots switch at the same widths
+// whatever that size is. Change both together.
+const WIDE_QUERY = "(40rem <= width < 64rem), (width >= 81rem)";
 
 function subscribeWide(listener: () => void): () => void {
   const media = window.matchMedia(WIDE_QUERY);
@@ -296,8 +297,8 @@ function Field({ onEscape }: { onEscape?: () => void }) {
 
 /**
  * A live map of the content index. Decorative in effect: it renders nothing below
- * 40rem, nothing before hydration, and nothing if it throws (see SilentBoundary),
- * and the page is complete without it.
+ * 40rem or between 64rem and 81rem, nothing before hydration, and nothing if it
+ * throws (see SilentBoundary), and the page is complete without it.
  */
 export function SimilarityField({
   onEscape,

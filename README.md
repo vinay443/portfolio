@@ -26,17 +26,17 @@ The scorer lives in `src/lib/search.ts`. It is a pure, dependency-free module wi
 
 Queries are also expanded through a small, hand-curated synonym list in `src/lib/expansion.ts`, so "RAG" reaches items that say "retrieval", and matches reached only through a synonym are weighted at 0.4× a direct match and never highlighted. This is term expansion over a fixed list, not semantic similarity: a word that is not in the list reaches nothing it does not literally contain.
 
-1. **Tokenization.** The query is lowercased, punctuation is stripped, and stopwords (`a`, `an`, `the`, `and`, `or`, `of`, `in`, `on`, `for`, `with`, `to`, `is`, `at`) are dropped. `+` and `#` survive so `c++` stays one token, while `/` is treated as a separator so `kafka/redpanda` indexes as two.
+1. **Tokenization.** The query is lowercased, punctuation is stripped, and stopwords are dropped, from content and query alike: function words, question words and auxiliaries, pronouns, request verbs like "tell" and "show", and the fragments an apostrophe leaves behind. Visitors ask questions, so "what did you study" searches for "study" alone rather than for any project that happens to say "what". The full list is in `src/lib/search.ts`. `+` and `#` survive so `c++` stays one token, while `/` is treated as a separator so `kafka/redpanda` indexes as two.
 
 2. **Field-weighted scoring.** Every item carries a precomputed `searchText` field — its title, role, description, bullets and tags, lowercased and concatenated. Per token: `+3` for a match in the title or role, `+2` for a match against a tag or stack entry, `+1` for a match anywhere in `searchText`, and `+0.5` when the last word of the query, the one still being typed, has three or more characters and starts a longer word — so "kaf" finds "Kafka", while a finished word, or any word followed by a space, gets no prefix credit. Every match is on word boundaries — "red" matches "red-teaming" but not "reducing" or "Redpanda" — with plurals and "-ing" forms folded together. The signals stack, so a token that hits the title also earns the `searchText` point. Highlighting does not have its own matching rules: it marks what the same `directMatches()` function finds, so a typed word is underlined only where it counts, stemmed matches included ("learning" underlines the "learn" in "scikit-learn").
 
-3. **Normalization.** The total is divided by the token count, so a long query cannot outscore a short one merely by having more terms.
+3. **Normalization.** The total is divided by the token count, so a long query cannot outscore a short one merely by having more terms. The score a row shows is that figure over 3 (what a word earns as a tag or stack entry), capped at 1.00. It is absolute, not scaled to the best row: 1.00 means the item names every word typed, and a query that nothing answers well reads low rather than crowning its best match 1.00.
 
 4. **Tiers, then score.** Items that contain a typed term — as a whole word, or for the word still being typed as the start of one — rank above items reached only through a synonym, and the page labels the second group "Related matches". Within each group items sort by their full score, and ties fall back to the original array index, so equal-scoring items never shuffle between keystrokes.
 
 5. **Empty-query default.** A query with no usable tokens returns every item in its authored order with a score of zero — featured projects first. A query of nothing but stopwords is treated as no search at all, rather than as a search that matches everything.
 
-Skills, education and certifications are scored but never removed: anything that does not match dims instead of disappearing, because it is the context the matches sit in. Skills dim one at a time, by the same test the hero's count uses, and a skill group's heading stays lit while any skill in it matches.
+Education, certifications and skills are also indexed under the words people use to ask about them — "degree", "college", "university", "study", "certificate", "skills", "tech stack" — which their rendered text does not spell out. They are scored but never removed: anything that does not match dims instead of disappearing, because it is the context the matches sit in. Skills dim one at a time, by the same test the hero's count uses, and a skill group's heading stays lit while any skill in it matches.
 
 ## Stack
 
@@ -63,7 +63,7 @@ src/
 │   └── projects/[slug]/        Statically generated project detail routes
 ├── components/
 │   ├── chrome/                 Header, footer, theme toggle
-│   ├── hero/                   Similarity field — the live map of the index
+│   ├── hero/                   Headshot, and the similarity field — the live map of the index
 │   ├── search/                 Search context, ranked list, result summary
 │   ├── sections/               Hero, experience, projects, skills, background, contact
 │   ├── theme/                  Theme provider and pre-paint script
@@ -124,7 +124,7 @@ Facts that are not yet confirmed are written as the literal string `TODO:` follo
 
 - One type family, IBM Plex, with the monospace reserved for genuine data — dates, metrics, status — and never used as decoration.
 - Design tokens over hardcoded values. No component contains a hex code; `globals.css` defines every colour. The single exception is `src/lib/og-theme.ts`, because the OG image renderer cannot read CSS custom properties.
-- Colour encodes what something is, never decoration. Five hues on one flat chroma plane — retrieval, model, infra, verified, adversary — mark domains on row edges, stack entries, skill groups and status. While a query is active, each row's edge bar also shows how strongly it matched, with its normalised score beside it: the page explains its own ranking.
+- Colour encodes what something is, never decoration. Five hues on one flat chroma plane — retrieval, model, infra, verified, adversary — mark domains on row edges, stack entries, skill groups and status. While a query is active, each row's edge bar also shows how strongly it matched, with its score beside it on a fixed 0–1 scale: the page explains its own ranking.
 - Hairline rules and whitespace instead of cards and shadows. The only shadow on the site is the focus ring.
 - Motion appears only on page load and in response to a query: rows re-rank, and the similarity field lights up the items that matched. Nothing animates on scroll, and nothing animates on hover beyond a colour transition.
 - `prefers-reduced-motion` is honoured throughout — the load sequence, the re-ranking transition, the similarity field and the cycling placeholder all settle into their final state instead.

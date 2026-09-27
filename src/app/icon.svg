@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="V">
+  <!-- The retrieval hue (#0f4c5c), which is the site accent and the OG image's
+       edge bar. The mark carries its own ground so it reads on light and dark
+       browser chrome alike, and a single stroked letterform survives 16px where a
+       two letter monogram turns to mush. -->
+  <rect width="32" height="32" rx="6" fill="#0f4c5c" />
+  <path
+    d="M8.5 10 L16 22 L23.5 10"
+    fill="none"
+    stroke="#ffffff"
+    stroke-width="3.6"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>

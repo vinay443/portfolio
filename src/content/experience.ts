@@ -91,7 +91,7 @@ export const experience: ExperienceItem[] = [
     kind: "experience",
     domain: "adversary",
     company: "Insys Technologies",
-    role: "Cybersecurity Analyst Intern",
+    role: "Cyber Security Analyst Intern",
     location: "Mumbai, India",
     start: "Aug 2021",
     end: "Oct 2021",
@@ -100,7 +100,7 @@ export const experience: ExperienceItem[] = [
     tags: insysTags,
     searchText: searchTextFrom(
       "Insys Technologies",
-      "Cybersecurity Analyst Intern",
+      "Cyber Security Analyst Intern",
       "Mumbai, India",
       insysBullets,
       insysTags,

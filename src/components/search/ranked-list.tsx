@@ -3,7 +3,7 @@
 import { useMemo, type ReactNode } from "react";
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from "motion/react";
 import { useSearch } from "./search-provider";
-import { rank as rankItems, type Rankable, type RankedItem } from "@/lib/search";
+import { displayScore, rank as rankItems, type Rankable, type RankedItem } from "@/lib/search";
 import { EmptyState } from "@/components/ui/empty-state";
 import type { RowRank } from "@/components/ui/row-bar";
 import { cn } from "@/lib/cn";
@@ -20,27 +20,24 @@ interface Row<T> {
 }
 
 /**
- * Display values for one group. Normalised within the group, not the section: the
- * order is tiered, so a section-wide scale let a related row read higher than the
- * direct rows above it. Each group's best row reads 1.00, ties included.
+ * Display values for one group. The score is absolute (`displayScore`), not scaled
+ * to the group's best row, which read 1.00 however weakly it matched. One result of
+ * that: a related row can read higher than a direct row above it. The tiers are a
+ * rule about what was typed, and the number is not bent to agree with them.
  */
 function toRows<T>(results: RankedItem<T>[], searching: boolean): Row<T>[] {
-  const scores = results.map((result) => result.totalScore);
-  const highest = Math.max(...scores);
-  const lowest = Math.min(...scores);
-  const spread = highest - lowest;
-
-  return results.map(({ item, totalScore }, index) => ({
-    item,
-    rank: {
-      searching,
-      normalizedScore: highest > 0 ? totalScore / highest : 0,
-      isTop: index === 0,
-      // Relative to this group only: its weakest row is 0.4, its strongest 1.
-      relevance:
-        spread === 0 ? 1 : MIN_RELEVANCE + ((1 - MIN_RELEVANCE) * (totalScore - lowest)) / spread,
-    },
-  }));
+  return results.map(({ item, totalScore }, index) => {
+    const score = displayScore(totalScore);
+    return {
+      item,
+      rank: {
+        searching,
+        score,
+        isTop: index === 0,
+        relevance: MIN_RELEVANCE + (1 - MIN_RELEVANCE) * score,
+      },
+    };
+  });
 }
 
 export function RankedList<T extends Rankable & { id: string }>({

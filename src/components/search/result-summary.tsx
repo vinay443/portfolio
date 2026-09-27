@@ -25,9 +25,11 @@ export function ResultSummary() {
   // appears alongside its text is inconsistently announced.
   return (
     <div aria-live="polite" className="px-6 md:px-12 lg:px-20">
-      {isSearching ? (
-        <p className="text-step-neg1 text-ink-2 pb-10">{summarise(matchCounts)}</p>
-      ) : null}
+      <div className="max-w-column mx-auto">
+        {isSearching ? (
+          <p className="text-step-neg1 text-ink-2 pb-10">{summarise(matchCounts)}</p>
+        ) : null}
+      </div>
     </div>
   );
 }

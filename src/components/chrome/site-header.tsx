@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type MouseEvent } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { profile } from "@/content";
 import { cn } from "@/lib/cn";
+import { alignToHash, HEADER_HEIGHT, scrollToElement } from "@/lib/scroll";
 import { ThemeToggle } from "./theme-toggle";
 
 const NAV = [
@@ -15,7 +16,12 @@ const NAV = [
   { id: "contact", label: "Contact" },
 ];
 
-const HEADER_HEIGHT = 56;
+/**
+ * A section becomes the current one as its top edge passes under the header. The
+ * extra pixel is what stops a section that is sitting exactly on the header line
+ * from flickering between states as rounding moves it back and forth.
+ */
+const ACTIVATION_LINE = HEADER_HEIGHT + 1;
 
 export function SiteHeader() {
   const pathname = usePathname();
@@ -42,29 +48,45 @@ export function SiteHeader() {
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [open]);
 
-  // The header lives in the root layout and survives navigation, so the observer
-  // is rebuilt per route. Off the home page there are no sections to find.
+  // The header lives in the root layout and survives navigation, so this is rebuilt
+  // per route. Off the home page there are no sections to find.
+  //
+  // This reads the sections' positions rather than observing intersections. An
+  // IntersectionObserver over a band can have several tall sections inside it at
+  // once and then has to guess which one the reader means; picking the first of
+  // them left the header a whole section behind — "Projects" stayed underlined
+  // with the "Background" heading at the top of the viewport. Measuring is exact:
+  // the current section is simply the last one whose top has passed the header.
   useEffect(() => {
     const sections = NAV.map((item) => document.getElementById(item.id)).filter(
       (element): element is HTMLElement => element !== null,
     );
+    // Off the home page there is nothing to track. The reading from the previous
+    // route is left alone rather than cleared, because `activeId` below already
+    // discards a reading whose path is not this one.
     if (sections.length === 0) return;
 
-    const visibility = new Map<string, boolean>();
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          visibility.set(entry.target.id, entry.isIntersecting);
-        }
-        const active = NAV.find((item) => visibility.get(item.id));
-        setSpy({ path: pathname, id: active ? active.id : null });
-      },
-      { rootMargin: `-${HEADER_HEIGHT}px 0px -55% 0px`, threshold: 0 },
-    );
+    const update = () => {
+      let current: string | null = null;
+      for (const section of sections) {
+        if (section.getBoundingClientRect().top <= ACTIVATION_LINE) current = section.id;
+      }
+      setSpy({ path: pathname, id: current });
+    };
 
-    for (const section of sections) observer.observe(section);
-    return () => observer.disconnect();
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
   }, [pathname]);
+
+  // A deep link like `/#contact` arrives as a full page load, so the browser has
+  // already made its own attempt by the time this runs. This holds the page on the
+  // target while the hero reveal, the dot field and webfonts finish moving it.
+  useEffect(() => alignToHash(), [pathname]);
 
   // A reading from the previous route never lights up a link on this one.
   const activeId = spy.path === pathname ? spy.id : null;
@@ -72,6 +94,26 @@ export function SiteHeader() {
   // A bare fragment keeps `?q=` intact on the home page; everywhere else the link
   // has to leave the current route.
   const hrefFor = (id: string) => (onHome ? `#${id}` : `/#${id}`);
+
+  // On the home page the jump is run here instead of by the browser, so its
+  // distance decides whether it animates. Off the home page the link is left alone
+  // to navigate, and `alignToHash` takes over once the next page loads.
+  const onSectionClick = (event: MouseEvent<HTMLAnchorElement>, id: string) => {
+    setOpen(false);
+    if (!onHome) return;
+    // Modified clicks belong to the browser: open in a new tab, download, and so on.
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+
+    const target = document.getElementById(id);
+    if (!target) return;
+
+    event.preventDefault();
+    scrollToElement(target);
+    // Keeps the URL shareable and the Back button meaningful. `pushState` rather
+    // than setting `location.hash`, which would make the browser run its own
+    // fragment scroll on top of this one. A bare fragment preserves `?q=`.
+    window.history.pushState(null, "", `#${id}`);
+  };
 
   return (
     <>
@@ -87,6 +129,7 @@ export function SiteHeader() {
                 <a
                   key={item.id}
                   href={hrefFor(item.id)}
+                  onClick={(event) => onSectionClick(event, item.id)}
                   aria-current={activeId === item.id ? "location" : undefined}
                   className={cn(
                     "text-step-neg1 border-b-2 pb-0.5 transition-colors",
@@ -126,7 +169,7 @@ export function SiteHeader() {
               <a
                 key={item.id}
                 href={hrefFor(item.id)}
-                onClick={() => setOpen(false)}
+                onClick={(event) => onSectionClick(event, item.id)}
                 aria-current={activeId === item.id ? "location" : undefined}
                 className={cn(
                   "text-step-neg1 py-2 transition-colors",

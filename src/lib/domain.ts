@@ -2,13 +2,17 @@ import type { Domain, ProjectItem } from "@/content";
 
 /**
  * Status is plain mono text whose hue carries the meaning: finished work reads as
- * verified, live adversarial work as adversary, other live work as retrieval.
+ * verified, work still in flight as the accent, archived as quiet ink.
+ *
+ * The adversary hue is deliberately absent. It means attack surface, and on a
+ * status label a red word reads as failure — which it was doing to the newest and
+ * most prominent project. A project's adversarial subject is already carried by
+ * its domain, through the row bar, the dot field and the stack chips, so nothing
+ * is lost by keeping status and subject on separate channels.
  */
-export function projectStatusClass(project: Pick<ProjectItem, "status" | "domain">): string {
+export function projectStatusClass(project: Pick<ProjectItem, "status">): string {
   if (project.status === "complete") return "text-verified";
-  if (project.status === "active") {
-    return project.domain === "adversary" ? "text-adversary" : "text-retrieval";
-  }
+  if (project.status === "active") return "text-accent";
   return "text-ink-3";
 }
 

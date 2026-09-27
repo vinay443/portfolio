@@ -1,19 +1,26 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
-import { AnimatePresence, motion, type MotionProps, useReducedMotion } from "motion/react";
-import { X } from "lucide-react";
+import { useEffect, useId, useRef, useState, type CSSProperties } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { Search, X } from "lucide-react";
 import { profile, searchExamples } from "@/content";
 import { isPlaceholder } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import { useSearch } from "@/components/search/search-provider";
+import { Headshot } from "@/components/hero/headshot";
 import { SimilarityField } from "@/components/hero/similarity-field";
 import { SilentBoundary } from "@/components/ui/silent-boundary";
 
-const EASE: [number, number, number, number] = [0.16, 1, 0.3, 1];
-const RISE_DURATION = 0.42;
-const RULE_DURATION = 0.48;
 const PLACEHOLDER_INTERVAL_MS = 3200;
+
+/**
+ * Staggers the `.hero-rise` keyframe, which is defined in globals.css. The delay
+ * is data on the element rather than a class per position, so the order of the
+ * hero's lines is readable here instead of in the stylesheet.
+ */
+function riseDelay(ms: number): CSSProperties {
+  return { "--rise-delay": `${ms}ms` } as CSSProperties;
+}
 
 function isTypingTarget(element: Element | null): boolean {
   if (!(element instanceof HTMLElement)) return false;
@@ -60,17 +67,6 @@ export function Hero() {
     return () => document.removeEventListener("keydown", onKeyDown, { capture: true });
   }, []);
 
-  // useReducedMotion reads the media query during the first client render but is
-  // null on the server. Anything that reaches the DOM — `initial` styles included —
-  // must therefore be identical either way, or hydration keeps the server's
-  // opacity:0 and the hero never appears. Only the transition, which is never
-  // serialised, changes: reduced motion gets a zero-length one.
-  const rise = (delay: number): MotionProps => ({
-    initial: { opacity: 0, y: 8 },
-    animate: { opacity: 1, y: 0 },
-    transition: reduceMotion ? { duration: 0 } : { duration: RISE_DURATION, ease: EASE, delay },
-  });
-
   const example = searchExamples[exampleIndex] ?? searchExamples[0] ?? "";
   const availability = isPlaceholder(profile.availability) ? null : profile.availability;
   const metaLine = availability ? `${profile.location} · ${availability}` : profile.location;
@@ -82,35 +78,40 @@ export function Hero() {
       : `${resultCount} ${resultCount === 1 ? "match" : "matches"}`;
 
   return (
-    <section className="px-6 pt-16 pb-12 md:px-12 md:pt-24 lg:px-20">
-      {/* Without JS the entrance animation never runs, so the initial styles motion
-          renders on the server would leave the hero invisible. */}
-      <noscript>
-        <style>{`.hero-rise{opacity:1!important;transform:none!important}`}</style>
-      </noscript>
-
-      <div className="max-w-[72rem] lg:grid lg:grid-cols-[minmax(0,640px)_minmax(0,420px)] lg:items-center lg:justify-between lg:gap-12">
+    <section className="short:pt-10 px-6 pt-10 pb-12 md:px-12 md:pt-20 lg:px-20">
+      {/* Starts on the same left edge as every section below (--column, centred), and
+          runs up to 72rem to the right so the field fits beside the text. The text
+          track is a fixed 640px: where the row is short of room, the field gives way
+          rather than the subline gaining a line. */}
+      <div className="ml-[max(0px,calc((100%-var(--column))/2))] max-w-[72rem] lg:grid lg:grid-cols-[640px_minmax(0,420px)] lg:items-center lg:justify-between lg:gap-12">
         <div className="max-w-[640px]">
-          <motion.h1
-            {...rise(0)}
-            className="hero-rise text-step-4 md:text-step-6 leading-[1.05] font-semibold tracking-[-0.03em]"
-          >
+          <Headshot />
+
+          <h1 className="hero-rise text-step-4 md:text-step-6 short:mt-4 mt-4 leading-[1.05] font-semibold tracking-[-0.03em] md:mt-6">
             {profile.name}
-          </motion.h1>
+          </h1>
 
-          <motion.p {...rise(0.08)} className="hero-rise text-step-2 text-ink-2 mt-6 max-w-[52ch]">
+          <p style={riseDelay(60)} className="hero-rise text-step-2 text-ink-2 mt-6 max-w-[52ch]">
             {profile.heroLine}
-          </motion.p>
+          </p>
 
-          <motion.p {...rise(0.14)} className="hero-rise text-step-neg1 text-ink-3 mt-4">
+          <p style={riseDelay(110)} className="hero-rise text-step-neg1 text-ink-3 mt-4">
             {metaLine}
-          </motion.p>
+          </p>
 
           <div className="mt-6 flex items-end gap-4">
             <div className="relative h-14 w-full">
               <label htmlFor={inputId} className="sr-only">
                 Search this site
               </label>
+
+              {/* The resting affordance. Without it the field is just a rotating
+                  word on a hairline, which reads as stray copy rather than a
+                  control. Decorative only — the field is named by its label. */}
+              <Search
+                aria-hidden
+                className="text-ink-2 pointer-events-none absolute top-1/2 left-0 size-[18px] -translate-y-1/2"
+              />
 
               <input
                 ref={inputRef}
@@ -132,7 +133,7 @@ export function Hero() {
                 aria-describedby={countId}
                 autoComplete="off"
                 spellCheck={false}
-                className="text-step-1 text-ink h-14 w-full bg-transparent pr-10 outline-none [&::-webkit-search-cancel-button]:appearance-none"
+                className="text-step-1 text-ink h-14 w-full bg-transparent pr-10 pl-7 outline-none [&::-webkit-search-cancel-button]:appearance-none"
               />
 
               {/* One line, always: the box stops where the input's own text stops (its
@@ -141,7 +142,7 @@ export function Hero() {
               {query.length === 0 && (
                 <div
                   aria-hidden
-                  className="pointer-events-none absolute inset-y-0 right-10 left-0 flex items-center"
+                  className="pointer-events-none absolute inset-y-0 right-10 left-7 flex items-center"
                 >
                   <AnimatePresence mode="wait" initial={false}>
                     <motion.span
@@ -150,7 +151,7 @@ export function Hero() {
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                       transition={{ duration: 0.2 }}
-                      className="text-step-1 text-ink-3 truncate"
+                      className="text-step-1 text-ink-2 truncate"
                     >
                       {example}
                     </motion.span>
@@ -172,14 +173,9 @@ export function Hero() {
                 </button>
               )}
 
-              <motion.span
+              <span
                 aria-hidden
-                className="hero-rise bg-rule absolute inset-x-0 bottom-0 h-px origin-left"
-                initial={{ scaleX: 0 }}
-                animate={{ scaleX: 1 }}
-                transition={
-                  reduceMotion ? { duration: 0 } : { duration: RULE_DURATION, delay: 0.2, ease: EASE }
-                }
+                className="hero-rule bg-ink-3/80 absolute inset-x-0 bottom-0 h-px origin-left"
               />
 
               <span
@@ -201,10 +197,14 @@ export function Hero() {
           </div>
         </div>
 
-        {/* Hidden below `sm` (40rem), a 320px block under the field until `lg`, and the
-            right-hand column above that. `sm` must stay in step with WIDE_QUERY in
-            similarity-field.tsx, which decides whether the dots mount at all. */}
-        <div className="mt-10 hidden h-80 sm:block lg:mt-0 lg:aspect-square lg:h-auto lg:w-full">
+        {/* Hidden below `sm` (40rem), a 320px block under the field until `lg`, hidden
+            again from `lg` to 81rem, and the right-hand column from there. Beside the
+            fixed text track the column is (viewport - 656px) / 2 wide with a classic
+            16px scrollbar, which first reaches the block's 320px at 81rem (1296px); any
+            smaller and its 13-unit labels drop below 10px. Both ranges must stay in
+            step with WIDE_QUERY in similarity-field.tsx, which decides whether the
+            dots mount at all. */}
+        <div className="mt-10 hidden h-80 sm:block lg:mt-0 lg:aspect-square lg:h-auto lg:w-full lg:max-[81rem]:hidden">
           <SilentBoundary>
             <SimilarityField onEscape={() => inputRef.current?.focus()} />
           </SilentBoundary>

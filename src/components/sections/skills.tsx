@@ -12,7 +12,8 @@ export function Skills() {
 
   return (
     <div id="skills" className="scroll-mt-14">
-      <h3 className="text-step-1 font-medium">Skills</h3>
+      {/* "skills" is indexed on every skill (SKILL_TERMS), so the heading can carry the mark. */}
+      <h3 className="text-step-1 font-medium">{highlight("Skills", parsedQuery, "heading")}</h3>
 
       <dl className="mt-6 grid gap-x-10 gap-y-5 md:grid-cols-[12rem_1fr]">
         {skills.map((group) => {

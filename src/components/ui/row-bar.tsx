@@ -9,9 +9,12 @@ import { cn } from "@/lib/cn";
  */
 export interface RowRank {
   searching: boolean;
-  /** The row's total score divided by its group's highest, so each group's top row reads 1. */
-  normalizedScore: number;
-  /** 0.4 for the weakest row in its group, 1 for the strongest. */
+  /**
+   * The row's score on the fixed 0–1 scale of `displayScore()`. Absolute, not relative
+   * to the other rows, so the best row reads 1.00 only when it earns it.
+   */
+  score: number;
+  /** The bar's opacity: the score mapped onto 0.4–1, so the bar and the number agree. */
   relevance: number;
   /** First row of its group. Gets the wider bar. */
   isTop: boolean;
@@ -45,7 +48,7 @@ export function ScoreReadout({ rank }: { rank: RowRank }) {
   if (!rank.searching) return null;
   return (
     <span className="text-step-neg1 text-ink-3 shrink-0 font-mono tabular-nums">
-      {rank.normalizedScore.toFixed(2)}
+      {rank.score.toFixed(2)}
     </span>
   );
 }

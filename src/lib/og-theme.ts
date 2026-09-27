@@ -9,6 +9,7 @@ export const OG = {
   ink2: "#4a5054",
   rule: "#dcdfda",
   accent: "#0f4c5c",
+  accentFg: "#ffffff",
 } as const;
 
 export const OG_SIZE = { width: 1200, height: 630 } as const;

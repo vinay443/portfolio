@@ -1,35 +1,28 @@
-import { profile } from "@/content";
+import { siteLinks } from "@/content";
+import { ExternalLink } from "@/components/ui/external-link";
 import { isPlaceholder } from "@/lib/format";
 
 const LINK_CLASSES = "text-ink-2 hover:text-accent underline-offset-4 hover:underline";
 
+// One line only. Email, GitHub and LinkedIn belong to the Contact section directly
+// above it; repeating them here put the same two links twice on one screen.
 export function SiteFooter() {
-  const links = [
-    ...profile.links,
-    ...(profile.resumeAvailable ? [{ label: "Download résumé", href: profile.resumeUrl }] : []),
-  ];
-  const repoConfirmed = !isPlaceholder(profile.repoUrl);
+  const repoConfirmed = !isPlaceholder(siteLinks.repo);
 
   return (
     <footer className="mt-section px-6 md:px-12 lg:px-20">
-      <div className="border-rule max-w-column border-t py-10">
-        <ul className="text-step-neg1 flex flex-wrap gap-x-6 gap-y-2">
-          {links.map((link) => (
-            <li key={link.label}>
-              <a href={link.href} className={LINK_CLASSES}>
-                {link.label}
-              </a>
-            </li>
-          ))}
-        </ul>
-
-        <p className="text-step-neg1 text-ink-3 mt-6">
+      <div className="border-rule max-w-column mx-auto border-t py-10">
+        <p className="text-step-neg1 text-ink-3">
           {repoConfirmed ? (
             <>
               This site is open source —{" "}
-              <a href={profile.repoUrl} className={LINK_CLASSES}>
+              <ExternalLink
+                href={siteLinks.repo}
+                label="View the repository this site is built from, on GitHub"
+                className={LINK_CLASSES}
+              >
                 view the repository
-              </a>
+              </ExternalLink>
               .
             </>
           ) : (

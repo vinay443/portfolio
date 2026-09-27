@@ -75,11 +75,26 @@ const groups: { id: string; category: string; domain: Domain; skills: string[] }
   },
 ];
 
+/**
+ * What people call the section rather than any one skill in it. "What are your
+ * skills" names no technology, so without these it matched nothing here.
+ */
+const SKILL_TERMS = ["skills", "skillset", "tech stack", "technologies", "tools"];
+
+/**
+ * The index text for one skill. Skills are matched one at a time — by the hero's
+ * count, the Skills section and the similarity field — so each carries the section's
+ * terms itself.
+ */
+export function skillSearchText(skill: string): string {
+  return searchTextFrom(skill, SKILL_TERMS);
+}
+
 export const skills: SkillGroup[] = groups.map((group) => ({
   id: group.id,
   kind: "skill",
   category: group.category,
   domain: group.domain,
   skills: group.skills,
-  searchText: searchTextFrom(group.category, group.skills),
+  searchText: searchTextFrom(group.category, group.skills, SKILL_TERMS),
 }));

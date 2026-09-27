@@ -1,37 +1,59 @@
 import type { Profile } from "./types";
 
+/** Strips the protocol and any trailing slash, so a handle reads as text, not a URL. */
+function handleOf(url: string): string {
+  return url.replace(/^https?:\/\//, "").replace(/\/+$/, "");
+}
+
+/**
+ * The single source for every contact and social destination. Nothing else in the
+ * codebase writes one of these URLs literally: `profile.links`, the Contact
+ * section, the footer and the JSON-LD `sameAs` all read from here, so a changed
+ * handle changes everywhere at once.
+ *
+ * The LinkedIn URL is the canonical vanity path. A numeric member id, a `/feed/`
+ * URL or anything carrying tracking query params is not interchangeable with it —
+ * those rot, and they leak where the link was copied from.
+ */
+export const siteLinks = {
+  email: "vinaywarrier2108@gmail.com",
+  github: "https://github.com/vinay443",
+  linkedin: "https://www.linkedin.com/in/vinay-warrier/",
+  repo: "https://github.com/vinay443/portfolio",
+} as const;
+
 export const profile: Profile = {
   name: "Vinay Warrier",
   role: "AI Engineer",
   location: "Mumbai, India",
-  email: "vinaywarrier2108@gmail.com",
+  email: siteLinks.email,
   summary:
-    "U.S.-educated Computer Science graduate and AI Engineer with hands-on experience developing enterprise AI platforms for the banking sector. Proficient in Python, LLMs, RAG, vector embeddings, Docker, and enterprise integrations, with a strong background in AI application development, semantic search optimization, and production-ready software engineering.",
+    "U.S.-educated AI Engineer building enterprise AI platforms for banks: RAG pipelines, semantic search, and the FastAPI services that run them in production.",
   heroLine:
     "Builds AI systems for banks: retrieval-augmented generation, semantic search, and the FastAPI services that run them in production.",
-  availability: "Open to remote roles with US companies",
+  availability: "Open to roles in India and remote worldwide",
   lookingFor:
-    "Looking for remote AI Engineer roles with US companies. The work I want involves LLM systems, retrieval, and the backend services around them.",
+    "Looking for AI Engineer roles in India, or remote roles anywhere. The work I want involves LLM systems, retrieval, and the backend services around them.",
   links: [
     {
       label: "Email",
-      href: "mailto:vinaywarrier2108@gmail.com",
-      handle: "vinaywarrier2108@gmail.com",
+      href: `mailto:${siteLinks.email}`,
+      handle: siteLinks.email,
     },
     {
       label: "GitHub",
-      href: "https://github.com/vinay443",
-      handle: "github.com/vinay443",
+      href: siteLinks.github,
+      handle: handleOf(siteLinks.github),
     },
     {
       label: "LinkedIn",
-      href: "https://www.linkedin.com/in/vinay-warrier/",
-      handle: "linkedin.com/in/vinay-warrier",
+      href: siteLinks.linkedin,
+      handle: handleOf(siteLinks.linkedin),
     },
   ],
   resumeUrl: "/resume.pdf",
   resumeAvailable: false,
-  repoUrl: "https://github.com/vinay443/portfolio",
+  repoUrl: siteLinks.repo,
 };
 
 /** Cycled through the hero query field as placeholder text. */

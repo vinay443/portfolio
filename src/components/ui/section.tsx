@@ -14,7 +14,7 @@ export function Section({
   return (
     <section
       id={id}
-      className="border-rule max-w-column py-section scroll-mt-14 border-t has-[[data-empty-state]]:pt-8 has-[[data-empty-state]]:pb-0"
+      className="border-rule max-w-column py-section mx-auto scroll-mt-14 border-t has-[[data-empty-state]]:pt-8 has-[[data-empty-state]]:pb-0"
     >
       <h2 className="text-step-3 font-medium tracking-[-0.02em]">{title}</h2>
       <div className="mt-10 grid gap-10 has-[[data-empty-state]]:mt-0">{children}</div>

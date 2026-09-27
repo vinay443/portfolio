@@ -14,21 +14,33 @@ import {
   type Phrase,
 } from "./expansion";
 
-const STOPWORDS = new Set([
-  "a",
-  "an",
-  "the",
-  "and",
-  "or",
-  "of",
-  "in",
-  "on",
-  "for",
-  "with",
-  "to",
-  "is",
-  "at",
-]);
+/**
+ * Dropped from queries and from content alike. Visitors ask questions, and in "what
+ * did you study" only "study" is about anything: left in, "what" matched the one
+ * project that happens to say "what", and ranked it first.
+ *
+ * A word listed here can never be searched for. That rules out "may" (the dates say
+ * "May 2025") and "list" ("Dean's List"). "go" is listed although it names a
+ * language, because nothing on the site is written in Go and "where did you go to
+ * college" is not about one.
+ */
+const STOPWORDS = new Set(
+  [
+    // Function words.
+    "a an the and or of in on for with to is at as by from into about not than this that",
+    "these those there here any some",
+    // Question words and auxiliaries.
+    "what which who whom whose where when why how",
+    "do does did done be am are was were been being have has had can could would should will",
+    // Pronouns in every person: a visitor may ask "you", or write about the owner.
+    "i me my mine you your yours we us our he him his she her they them their it its",
+    // Request verbs and fillers.
+    "tell show give get got go went please ever",
+    // What an apostrophe leaves behind: the tokenizer splits on it, so "what's" is
+    // "what" and "s", and "s" matched every "Dean's" and "attack's" on the page.
+    "s t d m ll re ve",
+  ].flatMap((line) => line.split(" ")),
+);
 
 const HEADLINE_WEIGHT = 3;
 const LABEL_WEIGHT = 2;
@@ -42,6 +54,23 @@ const PREFIX_MIN_LENGTH = 3;
  * so a synonym never counts for as much as the word itself.
  */
 export const EXPANSION_WEIGHT = 0.4;
+
+/**
+ * The least one typed word earns when an item names it rather than mentions it: a
+ * tag or stack entry, which `searchText` always repeats. A title or role hit earns
+ * more and is capped at the same place.
+ */
+const FULL_MATCH = LABEL_WEIGHT + BODY_WEIGHT;
+
+/**
+ * The score a row displays, on a fixed 0–1 scale: the per-token score over
+ * `FULL_MATCH`, capped at 1. Fixed rather than scaled to the best row on the page,
+ * so 1.00 means the item names every word typed, and a query nothing answers well
+ * reads low instead of crowning whatever matched least badly.
+ */
+export function displayScore(totalScore: number): number {
+  return Math.min(1, totalScore / FULL_MATCH);
+}
 
 /** Anything the ranker can score. Matches the content items structurally. */
 export interface Rankable {
@@ -59,7 +88,7 @@ export interface ItemScore {
    * related for one keystroke. Above zero places the item in the top tier.
    */
   directScore: number;
-  /** Direct and expanded together. Orders items within a tier, and is what is displayed. */
+  /** Direct and expanded together. Orders items within a tier; `displayScore()` shows it. */
   totalScore: number;
 }
 

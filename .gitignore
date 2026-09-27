@@ -39,6 +39,9 @@ next-env.d.ts
 .vscode/*
 !.vscode/extensions.json
 
+# source photo for scripts/headshot.py, kept local and out of the public repo
+/assets/
+
 # agent tooling (local development aids, not part of the site)
 .claude/
 .agents/

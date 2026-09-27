@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { projects, type ProjectItem } from "@/content";
+import { ExternalLink } from "@/components/ui/external-link";
 import { StackList } from "@/components/ui/stack-list";
 import { RuleList, RuleListItem } from "@/components/ui/rule-list";
 import { projectStatusClass } from "@/lib/domain";
@@ -13,6 +14,11 @@ const ADVERSARIAL =
   /\b(attack|adversar|inject|hijack|sandbox|guard|red[- ]?team|vulnerab|cryptanal|resistance|traversal|security)/i;
 
 const LINK_CLASSES = "text-retrieval underline underline-offset-4 break-all";
+
+/** The URL as it reads on the page, which is also its accessible name. */
+function bareUrl(url: string): string {
+  return url.replace(/^https?:\/\//, "");
+}
 
 function publishedProject(slug: string): ProjectItem | undefined {
   return projects.find((project) => project.slug === slug && !project.sensitive);
@@ -31,7 +37,10 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const project = publishedProject(slug);
-  if (!project) return {};
+  // Thrown here as well as in the page: Next then resolves this route's metadata
+  // from not-found.tsx, which is what titles it "Project not found". Returning an
+  // empty object instead left the default site title on the 404.
+  if (!project) notFound();
 
   return {
     title: project.title,
@@ -58,29 +67,31 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
     value: <span className={projectStatusClass(project)}>{project.status}</span>,
   });
   if (project.repoUrl) {
+    const shown = bareUrl(project.repoUrl);
     facts.push({
       label: "Repository",
       value: (
-        <a href={project.repoUrl} className={LINK_CLASSES}>
-          {project.repoUrl.replace(/^https?:\/\//, "")}
-        </a>
+        <ExternalLink href={project.repoUrl} label={shown} className={LINK_CLASSES}>
+          {shown}
+        </ExternalLink>
       ),
     });
   }
   if (project.liveUrl) {
+    const shown = bareUrl(project.liveUrl);
     facts.push({
       label: "Live",
       value: (
-        <a href={project.liveUrl} className={LINK_CLASSES}>
-          {project.liveUrl.replace(/^https?:\/\//, "")}
-        </a>
+        <ExternalLink href={project.liveUrl} label={shown} className={LINK_CLASSES}>
+          {shown}
+        </ExternalLink>
       ),
     });
   }
 
   return (
     <main id="content" tabIndex={-1} className="flex-1 px-6 outline-none md:px-12 lg:px-20">
-      <article className="max-w-column pt-16 pb-20">
+      <article className="max-w-column mx-auto pt-16 pb-20">
         <Link href="/#projects" className="text-step-neg1 text-ink-2 hover:text-accent">
           Back to projects
         </Link>

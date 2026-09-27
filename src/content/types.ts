@@ -22,6 +22,7 @@ export interface Profile {
   role: string;
   location: string;
   email: string;
+  /** The default meta description. Keep it to 150–160 characters, where search results cut off. */
   summary: string;
   /** One sentence for the hero, condensed from `summary`. */
   heroLine: string;
@@ -94,12 +95,32 @@ export type EducationVariant = "degree" | "certification";
 export interface EducationItem extends ContentItem {
   kind: "education";
   variant: EducationVariant;
+  /** What the credential is. For a degree this is the programme, not the awarding body. */
   title: string;
+  /** The awarding body. For a degree this is the line the block leads with. */
   institution: string;
   location?: string;
+  /** Which campus of a multi-campus university. Renders ahead of `location`. */
+  campus?: string;
+  /** The school or college within the university. */
+  school?: string;
+  /**
+   * How the programme is structured — "Double major". Stated rather than left to be
+   * inferred from a title that happens to name two subjects.
+   */
+  qualifier?: string;
+  /** Start of the range in the date gutter. Omitted rather than guessed when unknown. */
+  start?: string;
+  end?: string;
+  /** The rendered date. Derived from `start` and `end` so the two cannot drift. */
   period: string;
   gpa?: string;
+  /** Short credential labels, rendered as a row of tags rather than prose bullets. */
   honors?: string[];
+  /** The particulars those short labels compress, kept to one quiet line. */
+  honorsNote?: string;
+  /** Hue for the accent rule and the honors tags — see the --c-* tokens. */
+  domain?: Domain;
   description?: string;
 }
 

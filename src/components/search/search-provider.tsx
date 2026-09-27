@@ -11,8 +11,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { education, experience, projects, skills } from "@/content";
+import { usePathname, useSearchParams } from "next/navigation";
+import { education, experience, projects, skills, skillSearchText } from "@/content";
 import { EMPTY_QUERY, parseQuery, rank, scoreItem, type ParsedQuery } from "@/lib/search";
 
 const DEBOUNCE_MS = 120;
@@ -35,7 +35,7 @@ const PUBLIC_PROJECTS = projects.filter((project) => !project.sensitive);
  * Skills section's dimming both call this, so a lit skill is always a counted one.
  */
 export function skillMatches(skill: string, query: ParsedQuery): boolean {
-  return scoreItem({ searchText: skill.toLowerCase(), tags: [skill] }, query) > 0;
+  return scoreItem({ searchText: skillSearchText(skill), tags: [skill] }, query) > 0;
 }
 
 /**
@@ -112,7 +112,6 @@ function SearchParamsBridge({
   query: string;
   onAdopt: (value: string) => void;
 }) {
-  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const adopted = useRef(false);
@@ -137,21 +136,29 @@ function SearchParamsBridge({
     // this a search would follow the visitor onto every project page's URL.
     if (pathname !== "/") return;
 
-    const current = searchParams.get("q") ?? "";
-    if (current === query) return;
+    // Read from the address bar, not `useSearchParams`: Next updates that in a
+    // transition, so it can still hold the URL from before this effect's last write.
+    const params = new URLSearchParams(window.location.search);
+    if ((params.get("q") ?? "") === query) return;
 
-    const params = new URLSearchParams(searchParams.toString());
     if (query.length > 0) {
       params.set("q", query);
     } else {
       params.delete("q");
     }
 
+    // The History API, not `router.replace`. A router navigation asks the server for
+    // a new RSC payload on every debounced keystroke; Next's patched `replaceState`
+    // only moves `usePathname` and `useSearchParams` onto the new URL, without a
+    // request. Replace rather than push, so Back leaves the page instead of stepping
+    // back through every query typed on it.
     const queryString = params.toString();
-    router.replace(queryString.length > 0 ? `${pathname}?${queryString}` : pathname, {
-      scroll: false,
-    });
-  }, [query, pathname, router, searchParams]);
+    window.history.replaceState(
+      null,
+      "",
+      queryString.length > 0 ? `${pathname}?${queryString}` : pathname,
+    );
+  }, [query, pathname]);
 
   return null;
 }
